@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>V-AutoFlow Beat Analyzer</title>
+    <link rel="stylesheet" href="./assets/styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <h1>V-AutoFlow 节拍分析（开源版）</h1>
+
+      <section class="panel">
+        <h2>1) 配置</h2>
+        <label class="field">
+          <span>API 地址</span>
+          <input id="api-url" type="text" placeholder="例如：https://v-autoflow-api.fly.dev" />
+        </label>
+        <div class="row">
+          <label class="field">
+            <span>方法</span>
+            <select id="method">
+              <option value="beat">beat（强拍）</option>
+              <option value="onset">onset（波峰）</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>最小间隔（秒）</span>
+            <input id="min-interval" type="number" step="0.05" min="0.05" value="0.3" />
+          </label>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>2) 上传音频并分析</h2>
+        <input id="audio-file" type="file" accept="audio/*" />
+        <div class="row">
+          <button id="analyze-btn">开始分析</button>
+          <span id="status" class="status"></span>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>3) 结果</h2>
+        <div id="meta" class="meta"></div>
+        <div class="wave-wrap">
+          <div id="waveform" class="waveform"></div>
+          <div id="beat-overlay" class="beat-overlay" aria-hidden="true"></div>
+        </div>
+        <div class="row">
+          <button id="play-btn" disabled>播放/暂停</button>
+          <span id="play-status" class="status"></span>
+        </div>
+        <div class="row">
+          <button id="download-json" disabled>下载 JSON</button>
+          <button id="download-csv" disabled>下载 CSV</button>
+        </div>
+        <pre id="result" class="result"></pre>
+      </section>
+
+      <section class="panel">
+        <h2>4) 选择图片与时间线预览</h2>
+        <input id="image-files" type="file" multiple accept="image/*" />
+        <div id="images-grid" class="images-grid"></div>
+        <div id="timeline" class="timeline"></div>
+      </section>
+
+      <footer class="footer">
+        <p>提示：若 API 冷启动较慢，请耐心等待或重试。</p>
+      </footer>
+    </main>
+
+    <script src="https://unpkg.com/wavesurfer.js@7"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1/Sortable.min.js"></script>
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>
