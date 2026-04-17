@@ -30,17 +30,17 @@ cd v-autoflow-web/api
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
-python app.py
+PORT=8088 python app.py
 ```
 
 健康检查：
 ```bash
-curl http://localhost:8080/api/health
+curl http://localhost:8088/api/health
 ```
 
 分析接口：
 ```bash
-curl -F "audio=@your.mp3" -F "method=beat" -F "min_interval=0.3" http://localhost:8080/api/analyze
+curl -F "audio=@your.mp3" -F "method=beat" -F "min_interval=0.3" http://localhost:8088/api/analyze
 ```
 
 ## 本地运行（前端）

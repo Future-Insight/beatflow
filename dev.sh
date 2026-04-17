@@ -2,8 +2,8 @@
 # 一键启动 beatflow 本地开发环境：Flask API + 静态前端
 #
 # 用法：
-#   ./dev.sh                      默认 API 8080 / 前端 5173
-#   API_PORT=8088 ./dev.sh        换 API 端口（8080 被占时用这个）
+#   ./dev.sh                      默认 API 8088 / 前端 5173
+#   API_PORT=9000 ./dev.sh        换 API 端口
 #   WEB_PORT=3000 ./dev.sh        换前端端口
 #
 # 按 Ctrl+C 同时停止两个服务。日志保存到 .dev-logs/ 下。
@@ -11,7 +11,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-API_PORT="${API_PORT:-8080}"
+API_PORT="${API_PORT:-8088}"
 WEB_PORT="${WEB_PORT:-5173}"
 LOG_DIR=".dev-logs"
 API_LOG="$LOG_DIR/api.log"
@@ -22,7 +22,7 @@ port_busy() {
 }
 
 if port_busy "$API_PORT"; then
-  echo "[错误] API 端口 $API_PORT 已被占用；换端口重试：API_PORT=8088 $0" >&2
+  echo "[错误] API 端口 $API_PORT 已被占用；换端口重试：API_PORT=9000 $0" >&2
   exit 1
 fi
 if port_busy "$WEB_PORT"; then
@@ -89,8 +89,8 @@ cat <<EOF
 ==================================================
 EOF
 
-if [ "$API_PORT" != "8080" ]; then
-  echo "提示：API 端口不是默认 8080，请在前端页面把 API 地址改为 http://localhost:$API_PORT"
+if [ "$API_PORT" != "8088" ]; then
+  echo "提示：API 端口不是默认 8088，请在前端页面把 API 地址改为 http://localhost:$API_PORT"
   echo
 fi
 
