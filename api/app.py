@@ -21,7 +21,7 @@ def _create_app() -> Flask:
             resp.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
         return resp
 
-    @app.options("/api/<path:_any>")
+    @app.route("/api/<path:_any>", methods=["OPTIONS"])
     def _cors_preflight(_any):
         return ("", 204)
 
