@@ -3,74 +3,134 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>V-AutoFlow Beat Analyzer</title>
+    <title>Beatflow · 节拍卡点工作台</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="./assets/styles.css" />
   </head>
   <body>
     <main class="container">
-      <h1>V-AutoFlow 节拍分析（开源版）</h1>
+      <header class="hero">
+        <div>
+          <div class="hero-badge">Beatflow · Live</div>
+          <h1>节拍卡点工作台</h1>
+          <p class="hero-sub">
+            上传音乐，自动提取节拍；拖拽图片按节拍切换，所见即所得预览，一键导出卡点视频。
+          </p>
+        </div>
+        <div class="meta" id="top-meta">
+          <span class="kv"><span>BPM</span><b id="m-bpm">—</b></span>
+          <span class="kv"><span>时长</span><b id="m-dur">—</b></span>
+          <span class="kv"><span>节拍</span><b id="m-beats">—</b></span>
+        </div>
+      </header>
 
-      <section class="panel">
-        <h2>1) 配置</h2>
-        <label class="field">
-          <span>API 地址</span>
-          <input id="api-url" type="text" placeholder="例如：https://v-autoflow-api.fly.dev" />
-        </label>
-        <div class="row">
-          <label class="field">
-            <span>方法</span>
-            <select id="method">
-              <option value="beat">beat（强拍）</option>
-              <option value="onset">onset（波峰）</option>
-            </select>
-          </label>
-          <label class="field">
-            <span>最小间隔（秒）</span>
-            <input id="min-interval" type="number" step="0.05" min="0.05" value="0.3" />
-          </label>
-        </div>
-      </section>
+      <section class="workbench">
+        <!-- 左栏：音频 + 节拍 -->
+        <div class="panel">
+          <h2 class="panel-title"><span class="num">1</span>音频与节拍</h2>
 
-      <section class="panel">
-        <h2>2) 上传音频并分析</h2>
-        <input id="audio-file" type="file" accept="audio/*" />
-        <div class="row">
-          <button id="analyze-btn">开始分析</button>
-          <span id="status" class="status"></span>
-        </div>
-      </section>
+          <div class="dropzone compact">
+            <input id="audio-file" type="file" accept="audio/*" />
+          </div>
 
-      <section class="panel">
-        <h2>3) 结果</h2>
-        <div id="meta" class="meta"></div>
-        <div class="wave-wrap">
-          <div id="waveform" class="waveform"></div>
-          <div id="beat-overlay" class="beat-overlay" aria-hidden="true"></div>
-        </div>
-        <div class="row">
-          <button id="play-btn" disabled>播放/暂停</button>
-          <span id="play-status" class="status"></span>
-        </div>
-        <div class="row">
-          <button id="download-json" disabled>下载 JSON</button>
-          <button id="download-csv" disabled>下载 CSV</button>
-        </div>
-        <pre id="result" class="result"></pre>
-      </section>
+          <div class="row" style="margin-top:12px;">
+            <div class="field" style="flex:1; min-width:180px;">
+              <span>检测方法</span>
+              <select id="method">
+                <option value="beat">beat · 强拍（流行音乐）</option>
+                <option value="onset">onset · 波峰（古典/复杂节奏）</option>
+              </select>
+            </div>
+            <div class="field" style="width:160px;">
+              <span>最小间隔（秒）</span>
+              <input id="min-interval" type="number" step="0.05" min="0.05" value="0.3" />
+            </div>
+          </div>
 
-      <section class="panel">
-        <h2>4) 选择图片与时间线预览</h2>
-        <input id="image-files" type="file" multiple accept="image/*" />
-        <div id="images-grid" class="images-grid"></div>
-        <div id="timeline" class="timeline"></div>
-        <div class="row">
-          <button id="export-video-btn" disabled>导出视频（webm）</button>
-          <span id="export-status" class="status"></span>
+          <div class="row" style="margin-top:6px;">
+            <button id="analyze-btn">开始分析</button>
+            <button id="play-btn" class="ghost" disabled>▶ 播放 / 暂停</button>
+            <span id="status" class="status"></span>
+          </div>
+
+          <div class="wave-wrap">
+            <div id="waveform" class="waveform"></div>
+            <div id="beat-overlay" class="beat-overlay" aria-hidden="true"></div>
+          </div>
+
+          <div class="row" style="margin-top:10px;">
+            <span id="play-status" class="status"></span>
+            <span style="flex:1;"></span>
+            <button id="download-json" class="ghost" disabled>JSON</button>
+            <button id="download-csv" class="ghost" disabled>CSV</button>
+          </div>
+        </div>
+
+        <!-- 右栏：预览播放器 -->
+        <div class="panel">
+          <h2 class="panel-title"><span class="num">2</span>实时预览</h2>
+          <div class="preview">
+            <div id="preview-stage" class="preview-stage">
+              <div class="stage-empty" id="stage-empty">
+                上传音频 + 选图后，按播放键在此预览卡点效果
+              </div>
+              <div class="stage-hud" id="stage-hud"><span class="dot"></span><span id="stage-time">0:00</span></div>
+            </div>
+            <div class="preview-controls">
+              <button id="preview-play" class="icon ghost" disabled title="播放/暂停">▶</button>
+              <div id="preview-scrub" class="preview-scrub">
+                <div class="track"><div class="fill" id="scrub-fill"></div></div>
+                <div class="beats" id="scrub-beats"></div>
+                <div class="playhead" id="scrub-playhead"></div>
+              </div>
+              <div class="time" id="preview-time">0:00 / 0:00</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 跨两列：图片与导出 -->
+        <div class="panel span-2">
+          <h2 class="panel-title"><span class="num">3</span>图片素材与导出</h2>
+          <div class="dropzone">
+            <input id="image-files" type="file" multiple accept="image/*" />
+          </div>
+          <div id="images-grid" class="images-grid"></div>
+
+          <div style="margin-top:20px; padding-top:16px; border-top:1px solid var(--border);">
+            <div class="row between" style="margin-bottom:10px;">
+              <h2 class="panel-title" style="margin:0;"><span class="num">4</span>导出</h2>
+              <span id="export-status" class="status"></span>
+            </div>
+
+            <div class="rangepair">
+              <div class="field">
+                <span>起始时间（秒）<b id="clip-start-label" style="color:var(--text); margin-left:6px;">0.00</b></span>
+                <input id="clip-start" type="range" min="0" max="0" step="0.01" value="0" />
+              </div>
+              <div class="field">
+                <span>结束时间（秒）<b id="clip-end-label" style="color:var(--text); margin-left:6px;">0.00</b></span>
+                <input id="clip-end" type="range" min="0" max="0" step="0.01" value="0" />
+              </div>
+            </div>
+
+            <div class="row" style="margin-top:14px;">
+              <button id="export-video-btn" disabled>导出视频（webm）</button>
+              <span class="chip" id="clip-duration-chip">片段 0.00s</span>
+              <span style="flex:1;"></span>
+              <span class="chip warn">实时录制 · 耗时 ≈ 片段时长</span>
+            </div>
+          </div>
         </div>
       </section>
 
       <footer class="footer">
-        <p>提示：若 API 冷启动较慢，请耐心等待或重试。</p>
+        <span>Tip · 首次请求会唤醒服务器，稍等数秒</span>
+        <span>Beatflow · open source</span>
       </footer>
     </main>
 
