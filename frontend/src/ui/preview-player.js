@@ -164,6 +164,11 @@ export class PreviewPlayer {
       for (const [f, img] of this._imgEls) {
         img.classList.toggle("show", f === file);
       }
+      // 重触发一次 CSS 动画：先移除再强制 reflow 再加回
+      this.stageEl.classList.remove("beat");
+      // eslint-disable-next-line no-unused-expressions
+      this.stageEl.offsetWidth;
+      this.stageEl.classList.add("beat");
     }
 
     // 高亮离 playhead 最近的节拍刻度
