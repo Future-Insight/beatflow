@@ -1,0 +1,7 @@
+# dev.sh 运行产物
+.dev-logs/
+api/venv/
+
+# Python
+__pycache__/
+*.pyc
