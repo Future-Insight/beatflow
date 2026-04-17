@@ -32,12 +32,18 @@ function drawCover(ctx, bmp, w, h) {
 //
 // 实现是"实时录制"：导出 1 分钟的视频需要 1 分钟（由 MediaRecorder 决定）。
 // 想要离线加速，得换 WebCodecs + mp4-muxer。
+// startSec / endSec 可选，表示只导出 [startSec, endSec) 区间：
+// - 音频用 AudioBufferSourceNode.start(0, offset, duration) 从 startSec 开始并限制时长
+// - 画面按"原始时间轴"找当前 segment（不会把 startSec 后的时间重映射为 0），
+//   这样用户看到什么就导出什么
 export async function exportVideo({
   audioFile,
   segments,
   width = 720,
   height = 1280,
   fps = 30,
+  startSec = 0,
+  endSec,
   onProgress,
 }) {
   if (!audioFile) throw new Error("缺少音频文件");
@@ -76,19 +82,20 @@ export async function exportVideo({
   };
 
   const lastSeg = segments[segments.length - 1];
-  const totalSec = Math.min(audioBuf.duration, lastSeg.end || audioBuf.duration);
+  const rawEnd = Number.isFinite(endSec) && endSec > 0 ? endSec : (lastSeg.end || audioBuf.duration);
+  const clipStart = Math.max(0, Math.min(audioBuf.duration, Number(startSec) || 0));
+  const clipEnd = Math.max(clipStart, Math.min(audioBuf.duration, rawEnd));
+  const clipDur = clipEnd - clipStart;
+  if (clipDur <= 0) throw new Error("导出区间无效：起始 ≥ 结束");
 
   return new Promise((resolve, reject) => {
     let rafId = 0;
-    let segIdx = 0;
 
     function cleanup() {
       cancelAnimationFrame(rafId);
       try { source.stop(); } catch {}
       try { audioCtx.close(); } catch {}
-      try {
-        canvasStream.getTracks().forEach((t) => t.stop());
-      } catch {}
+      try { canvasStream.getTracks().forEach((t) => t.stop()); } catch {}
     }
 
     recorder.onerror = (e) => {
@@ -103,15 +110,21 @@ export async function exportVideo({
     const t0 = performance.now();
 
     function frame() {
-      const t = (performance.now() - t0) / 1000;
-      if (t >= totalSec) {
+      const elapsed = (performance.now() - t0) / 1000;
+      if (elapsed >= clipDur) {
         recorder.stop();
         return;
       }
+      const t = clipStart + elapsed; // 原始时间轴上的绝对时间
 
-      // 顺序推进指针，避免每帧 O(n) 查找
-      while (segIdx + 1 < segments.length && t >= segments[segIdx + 1].start) segIdx += 1;
-      const seg = segments[segIdx];
+      // 二分找当前 segment（segments 按 start 升序）
+      let lo = 0, hi = segments.length - 1, idx = 0;
+      while (lo <= hi) {
+        const mid = (lo + hi) >> 1;
+        if (segments[mid].start <= t) { idx = mid; lo = mid + 1; }
+        else hi = mid - 1;
+      }
+      const seg = segments[idx];
 
       ctx.fillStyle = "#000";
       ctx.fillRect(0, 0, width, height);
@@ -120,12 +133,12 @@ export async function exportVideo({
         if (bmp) drawCover(ctx, bmp, width, height);
       }
 
-      if (onProgress) onProgress(Math.min(1, t / totalSec));
+      if (onProgress) onProgress(Math.min(1, elapsed / clipDur));
       rafId = requestAnimationFrame(frame);
     }
 
     recorder.start();
-    source.start(0);
+    source.start(0, clipStart, clipDur);
     rafId = requestAnimationFrame(frame);
   });
 }
