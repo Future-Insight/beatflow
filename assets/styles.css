@@ -383,10 +383,27 @@ button.icon {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  /* 默认完全隐藏，节拍到来时硬切；不用 opacity transition，避免叠化造成"好几张一起显示"的错觉 */
+  visibility: hidden;
   opacity: 0;
-  transition: opacity 160ms ease;
 }
-.preview-stage img.show { opacity: 1; }
+.preview-stage img.show {
+  visibility: visible;
+  opacity: 1;
+}
+/* 每次切段时给舞台一个极短的脉冲反馈，让"卡点"看得见 */
+.preview-stage.beat::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.7);
+  animation: stage-pulse 180ms ease-out;
+}
+@keyframes stage-pulse {
+  0%   { opacity: 1; transform: scale(1.02); }
+  100% { opacity: 0; transform: scale(1); }
+}
 .preview-stage .stage-empty {
   position: absolute;
   inset: 0;
