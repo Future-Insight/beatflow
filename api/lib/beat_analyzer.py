@@ -438,12 +438,19 @@ def _ensure_boundaries_simple(beat_times: list[float], duration: float, min_inte
     return beats
 
 
+def _tempo_as_scalar(tempo) -> float:
+    # librosa 0.10+ 下 beat_track 返回 tempo 为 shape (1,) 的 ndarray，
+    # numpy 2.x 里 float(ndarray) 会抛 TypeError。统一拍成 Python float。
+    arr = np.asarray(tempo).reshape(-1)
+    return float(arr[0]) if arr.size else 0.0
+
+
 def _detect_beats(y: np.ndarray, sr: int) -> tuple:
     """标准节拍检测(强拍点)"""
     librosa = _get_librosa()
     tempo, beat_frames = librosa.beat.beat_track(y=y, sr=sr)
     beat_times = librosa.frames_to_time(beat_frames, sr=sr)
-    return tempo, beat_times
+    return _tempo_as_scalar(tempo), beat_times
 
 
 def _detect_onsets(y: np.ndarray, sr: int) -> tuple:
@@ -456,7 +463,7 @@ def _detect_onsets(y: np.ndarray, sr: int) -> tuple:
     # 估算tempo
     tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
 
-    return tempo, onset_times
+    return _tempo_as_scalar(tempo), onset_times
 
 
 def _filter_beats(beat_times: np.ndarray, y: np.ndarray, sr: int, tempo: float, min_interval: float) -> np.ndarray:
