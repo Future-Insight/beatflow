@@ -65,7 +65,7 @@ function refreshExportBtn() {
 }
 
 function defaultApiUrl() {
-  return loadString("apiUrl", "http://localhost:8080");
+  return loadString("apiUrl", "http://localhost:8088");
 }
 
 function normalizeApiUrl(v) {
