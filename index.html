@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="dark">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -7,132 +7,336 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap"
       rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;600;700&display=swap"
     />
     <link rel="stylesheet" href="./assets/styles.css" />
   </head>
   <body>
-    <main class="container">
+    <div class="app">
+      <!-- ===== Hero ===== -->
       <header class="hero">
-        <div>
-          <div class="hero-badge">Beatflow · Live</div>
-          <h1>节拍卡点工作台</h1>
-          <p class="hero-sub">
-            上传音乐，自动提取节拍；拖拽图片按节拍切换，所见即所得预览，一键导出卡点视频。
-          </p>
+        <div class="brand-row">
+          <div class="brand-mark"></div>
+          <div class="brand-name">Beatflow</div>
+          <div class="brand-dot">·</div>
+          <div class="brand-sub">节拍卡点工作台 / v0.9 beta</div>
+          <div class="brand-toolbar">
+            <button id="theme-btn" class="tb-btn" title="切换主题" aria-label="Theme">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" width="14" height="14">
+                <circle cx="12" cy="12" r="4"/>
+                <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>
+              </svg>
+            </button>
+            <a class="tb-btn tb-icon" href="https://github.com/Future-Insight/beatflow" target="_blank" rel="noopener" title="GitHub" aria-label="GitHub">
+              <svg viewBox="0 0 24 24" fill="currentColor" width="15" height="15">
+                <path d="M12 .5C5.65.5.5 5.65.5 12a11.5 11.5 0 0 0 7.86 10.92c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.53-1.35-1.3-1.7-1.3-1.7-1.06-.73.08-.72.08-.72 1.18.08 1.8 1.22 1.8 1.22 1.04 1.78 2.73 1.26 3.4.96.1-.75.41-1.26.74-1.55-2.56-.29-5.25-1.28-5.25-5.7 0-1.26.45-2.29 1.19-3.1-.12-.3-.52-1.48.11-3.08 0 0 .97-.31 3.18 1.18a11.05 11.05 0 0 1 5.78 0c2.2-1.49 3.18-1.18 3.18-1.18.63 1.6.23 2.78.12 3.08.74.81 1.19 1.84 1.19 3.1 0 4.43-2.7 5.4-5.27 5.69.42.36.79 1.07.79 2.17v3.21c0 .32.21.67.8.56A11.5 11.5 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5z"/>
+              </svg>
+            </a>
+          </div>
         </div>
-        <div class="meta" id="top-meta">
-          <span class="kv"><span>BPM</span><b id="m-bpm">—</b></span>
-          <span class="kv"><span>时长</span><b id="m-dur">—</b></span>
-          <span class="kv"><span>节拍</span><b id="m-beats">—</b></span>
+
+        <div class="hero-body">
+          <div class="hero-main">
+            <h1>
+              让音乐替你<br />
+              <span class="grad">剪出每一个节拍。</span>
+            </h1>
+            <p class="hero-sub">
+              上传一首音乐 + 一批图片，浏览器本地分析 BPM 与节拍点，图片严格按节拍硬切。所见即所得，直接导出为
+              <code>.webm</code>。无需登录、无需后端。
+            </p>
+            <div class="hero-privacy">
+              <span class="hp-ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 2l8 3v7c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V5l8-3z"/>
+                  <path d="M9 12l2 2 4-4"/>
+                </svg>
+              </span>
+              <span>节拍识别走远程 API · 视频在本地渲染 · 图片与导出永不上传。</span>
+            </div>
+          </div>
+
+          <div class="hero-side">
+            <div class="stat-chips">
+              <div class="chip live">
+                <div class="chip-label">BPM</div>
+                <div class="chip-value"><span id="m-bpm">—</span><span class="chip-unit">beats/min</span></div>
+              </div>
+              <div class="chip live">
+                <div class="chip-label">时长</div>
+                <div class="chip-value"><span id="m-dur">—</span><span class="chip-unit">sec</span></div>
+              </div>
+              <div class="chip live">
+                <div class="chip-label">节拍数</div>
+                <div class="chip-value"><span id="m-beats">—</span><span class="chip-unit">hits</span></div>
+              </div>
+            </div>
+          </div>
         </div>
       </header>
 
-      <section class="workbench">
-        <!-- 左栏：音频 + 节拍 -->
-        <div class="panel">
-          <h2 class="panel-title"><span class="num">1</span>音频与节拍</h2>
-
-          <div class="dropzone compact">
-            <input id="audio-file" type="file" accept="audio/*" />
+      <!-- ===== Work grid ===== -->
+      <div class="grid">
+        <!-- 01 · AUDIO PANEL -->
+        <section class="panel">
+          <div class="panel-head">
+            <div class="panel-title"><span class="num">01</span>音频与节拍</div>
+            <div class="panel-sub">AUDIO · BEAT DETECTION</div>
           </div>
 
-          <div class="row" style="margin-top:12px;">
-            <div class="field" style="flex:1; min-width:180px;">
-              <span>检测方法</span>
-              <select id="method">
-                <option value="beat">beat · 强拍（流行音乐）</option>
-                <option value="onset">onset · 波峰（古典/复杂节奏）</option>
+          <div class="field">
+            <label>音频文件</label>
+            <label id="audio-upload" class="upload">
+              <input id="audio-file" type="file" accept="audio/*" />
+              <div class="upload-ico">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <path d="M9 18V6l10-2v12"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/>
+                </svg>
+              </div>
+              <div class="upload-text">
+                <div class="t1" id="audio-upload-t1">点击上传 或拖入音频文件</div>
+                <div class="t2" id="audio-upload-t2">MP3 · WAV · M4A · FLAC · 最大 50MB</div>
+              </div>
+            </label>
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <label>检测方法</label>
+              <select id="method" class="select">
+                <option value="beat">流行音乐 · Onset + Spectral Flux</option>
+                <option value="onset">古典音乐 · Tempo Autocorrelation</option>
               </select>
             </div>
-            <div class="field" style="width:160px;">
-              <span>最小间隔（秒）</span>
-              <input id="min-interval" type="number" step="0.05" min="0.05" value="0.3" />
+            <div class="field">
+              <label>最小节拍间隔 <span class="hint">sec</span></label>
+              <input id="min-interval" class="input mono" type="number" step="0.05" min="0.05" max="2" value="0.3" />
             </div>
           </div>
 
-          <div class="row" style="margin-top:6px;">
-            <button id="analyze-btn">开始分析</button>
-            <button id="play-btn" class="ghost" disabled>▶ 播放 / 暂停</button>
-            <span id="status" class="status"></span>
+          <div class="row" style="margin-top:4px;">
+            <button id="analyze-btn" class="btn btn-primary">开始分析</button>
+            <button id="play-btn" class="btn" disabled>
+              <svg width="12" height="12" viewBox="0 0 12 12"><polygon points="3,2 10,6 3,10" fill="currentColor"/></svg>
+              <span id="play-btn-label">播放</span>
+              <span class="kbd">Space</span>
+            </button>
           </div>
 
-          <div class="wave-wrap">
-            <div id="waveform" class="waveform"></div>
-            <div id="beat-overlay" class="beat-overlay" aria-hidden="true"></div>
+          <div style="margin-top:10px;">
+            <span id="status" class="panel-sub"></span>
           </div>
 
-          <div class="row" style="margin-top:10px;">
-            <span id="play-status" class="status"></span>
-            <span style="flex:1;"></span>
-            <button id="download-json" class="ghost" disabled>JSON</button>
-            <button id="download-csv" class="ghost" disabled>CSV</button>
+          <div class="wave">
+            <div class="wave-head">
+              <div class="t" id="wave-head-left">Analysis · 等待分析</div>
+              <div class="t" id="wave-head-right" style="color:var(--fg-muted);">—</div>
+            </div>
+            <div class="wave-canvas">
+              <div id="waveform" class="waveform"></div>
+              <div id="beat-overlay" class="beat-overlay" aria-hidden="true"></div>
+            </div>
+            <div class="wave-foot">
+              <button id="download-json" class="btn" style="flex:0;" disabled>
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 1v8M3 6l3 3 3-3M2 11h8"/></svg>
+                beats.json
+              </button>
+              <button id="download-csv" class="btn" style="flex:0;" disabled>
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 1v8M3 6l3 3 3-3M2 11h8"/></svg>
+                beats.csv
+              </button>
+              <div style="flex:1;"></div>
+              <div id="wave-foot-right" style="font-family:var(--font-mono); font-size:10.5px; color:var(--fg-muted); align-self:center;">—</div>
+            </div>
           </div>
+        </section>
+
+        <!-- 02 · PREVIEW PANEL -->
+        <section class="panel">
+          <div class="panel-head">
+            <div class="panel-title"><span class="num">02</span>实时预览</div>
+            <div style="display:flex; align-items:center; gap:10px;">
+              <div class="seg aspect-seg" id="aspect-seg">
+                <button data-aspect="9:16" class="on">9:16</button>
+                <button data-aspect="1:1">1:1</button>
+                <button data-aspect="16:9">16:9</button>
+              </div>
+              <div class="panel-sub">WYSIWYG · HARD-CUT</div>
+            </div>
+          </div>
+
+          <div id="preview-wrap" class="preview-wrap">
+            <div class="stage-holder">
+              <div id="stage" class="stage" style="--pulse-ms:180ms;">
+                <div class="stage-hud">
+                  <div class="tag" id="stage-aspect-tag">9:16</div>
+                  <div class="rec" id="stage-rec" style="display:none;">
+                    <span class="dot"></span>
+                    <span id="stage-rec-label">LIVE</span>
+                  </div>
+                </div>
+                <div id="stage-slot" class="slide on">
+                  <div class="slide-empty" id="stage-empty">DROP IMAGES HERE</div>
+                </div>
+                <div id="stage-pulse" class="pulse"></div>
+              </div>
+              <div class="stage-meta">
+                <div><b id="sm-images">0</b> 张图片</div>
+                <div><b id="sm-beats">0</b> 个节拍</div>
+                <div><b id="sm-loops">0</b> 次循环</div>
+              </div>
+            </div>
+
+            <div>
+              <div class="timeline">
+                <div class="tl-head">
+                  <div class="tl-time">
+                    <span id="tl-cur">00:00.00</span>
+                    <span class="sep">/</span>
+                    <span id="tl-dur" style="color:var(--fg-muted);">00:00.00</span>
+                  </div>
+                  <div class="tl-ctrls">
+                    <button id="tl-back" class="btn btn-icon" title="-1s">
+                      <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><polygon points="8,1 3,5 8,9"/><rect x="1" y="1" width="1.5" height="8"/></svg>
+                    </button>
+                    <button id="tl-play" class="btn btn-icon" title="play/pause">
+                      <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><polygon points="2,1 9,5 2,9"/></svg>
+                    </button>
+                    <button id="tl-fwd" class="btn btn-icon" title="+1s">
+                      <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><polygon points="2,1 7,5 2,9"/><rect x="7.5" y="1" width="1.5" height="8"/></svg>
+                    </button>
+                  </div>
+                </div>
+
+                <div id="tl-track-wrap" class="tl-track-wrap">
+                  <div class="tl-track"></div>
+                  <div id="tl-dim-start" class="tl-dim" style="left:0; width:0;"></div>
+                  <div id="tl-dim-end" class="tl-dim" style="right:0; width:0;"></div>
+                  <div id="tl-fill" class="tl-fill" style="width:0%;"></div>
+                  <div id="tl-beats" class="tl-beats"></div>
+                  <div id="tl-range-start" class="tl-range-mark start" style="left:0%;"></div>
+                  <div id="tl-range-end" class="tl-range-mark end" style="left:100%;"></div>
+                  <div id="tl-playhead" class="tl-playhead" style="left:0%;"></div>
+                </div>
+                <div class="tl-labels">
+                  <span>00:00</span><span id="tl-lbl-1">—</span><span id="tl-lbl-2">—</span><span id="tl-lbl-3">—</span><span id="tl-lbl-4">—</span>
+                </div>
+
+                <div class="tl-range">
+                  <div class="tl-range-field">
+                    <label><span>起始秒</span><span class="v"><span id="clip-start-label">0.00</span>s</span></label>
+                    <div class="range-slider">
+                      <div class="range-track"></div>
+                      <div id="range-fill-start" class="range-fill" style="left:0%; right:100%;"></div>
+                      <input id="clip-start" type="range" min="0" max="0" step="0.01" value="0" />
+                    </div>
+                  </div>
+                  <div class="tl-range-field">
+                    <label><span>结束秒</span><span class="v"><span id="clip-end-label">0.00</span>s</span></label>
+                    <div class="range-slider">
+                      <div class="range-track"></div>
+                      <div id="range-fill-end" class="range-fill" style="left:0%; right:0%;"></div>
+                      <input id="clip-end" type="range" min="0" max="0" step="0.01" value="0" />
+                    </div>
+                  </div>
+                  <button id="clip-reset" class="btn btn-ghost tl-range-reset" title="重置">⟲</button>
+                </div>
+              </div>
+
+              <div class="pill-row">
+                <div class="pill accent"><span class="k">CUT</span><span id="pill-cut">—</span></div>
+                <div class="pill"><span class="k">NEXT BEAT</span><span id="pill-next">—</span></div>
+                <div class="pill"><span class="k">GRID</span>1/4</div>
+                <div class="pill"><span class="k">FIT</span><span id="pill-fit">cover</span></div>
+                <div class="pill"><span class="k">MODE</span>hard-cut</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 03 + 04 · MEDIA & EXPORT -->
+        <section class="panel wide">
+          <div style="display:grid; grid-template-columns:1.4fr 1fr; gap:28px;">
+            <!-- 03 -->
+            <div>
+              <div class="panel-head">
+                <div class="panel-title"><span class="num">03</span>图片素材</div>
+                <div class="panel-sub">DRAG TO REORDER · LOOP-FILLS BEATS</div>
+              </div>
+              <div class="thumbs-head">
+                <div class="count">已上传 <b id="img-count">0</b> 张 · 拖拽排序决定分配到节拍的顺序</div>
+                <div style="display:flex; gap:8px; align-items:center;">
+                  <div class="seg fit-seg" id="fit-seg">
+                    <button data-fit="cover" class="on">填充</button>
+                    <button data-fit="contain">适应</button>
+                    <button data-fit="stretch">拉伸</button>
+                  </div>
+                  <label class="btn" style="position:relative;">
+                    上传图片
+                    <input id="image-files" type="file" multiple accept="image/*" class="hidden-file" />
+                  </label>
+                </div>
+              </div>
+              <div id="images-grid" class="thumbs-grid"></div>
+            </div>
+
+            <!-- 04 -->
+            <div>
+              <div class="panel-head">
+                <div class="panel-title"><span class="num">04</span>导出</div>
+                <div class="panel-sub">EXPORT · WEBM</div>
+              </div>
+
+              <div class="export-summary">
+                <div class="es-head">
+                  <div class="es-label">片段范围 <span class="hint">来自预览面板 · 起/止</span></div>
+                  <div class="es-dur"><span id="es-dur">0.00</span><span>s</span></div>
+                </div>
+                <div class="es-bar">
+                  <div id="es-bar-fill" class="es-bar-fill" style="left:0%; right:100%;"></div>
+                </div>
+                <div class="es-times">
+                  <span id="es-time-start">00:00.00</span>
+                  <span>→</span>
+                  <span id="es-time-end">00:00.00</span>
+                </div>
+              </div>
+
+              <div class="pill-row">
+                <div class="pill accent"><span class="k">clip</span><span id="pill-clip">0.00s</span></div>
+                <div class="pill"><span class="k">res</span><span id="pill-res">1080 × 1920</span></div>
+                <div class="pill"><span class="k">fps</span>30fps</div>
+                <div class="pill"><span class="k">fmt</span>webm</div>
+              </div>
+
+              <div class="export-actions">
+                <button id="export-video-btn" class="btn btn-primary export-cta" disabled>
+                  <svg width="13" height="13" viewBox="0 0 13 13" fill="currentColor"><rect x="2" y="2" width="9" height="9" rx="2"/></svg>
+                  导出视频
+                </button>
+                <div id="export-progress" class="export-progress" style="display:none;">
+                  <div id="export-progress-bar" class="bar"></div>
+                  <div id="export-progress-lbl" class="lbl">0%</div>
+                </div>
+                <div id="export-status" class="export-note">本地录制 · 耗时 ≈ 片段时长</div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <footer class="site-footer">
+        <div class="ft-left">
+          <div class="brand-mark"></div>
+          <span class="ft-name">Beatflow</span>
+          <span class="ft-dim">© 2026 · Made in the browser</span>
         </div>
-
-        <!-- 右栏：预览播放器 -->
-        <div class="panel">
-          <h2 class="panel-title"><span class="num">2</span>实时预览</h2>
-          <div class="preview">
-            <div id="preview-stage" class="preview-stage">
-              <div class="stage-empty" id="stage-empty">
-                上传音频 + 选图后，按播放键在此预览卡点效果
-              </div>
-              <div class="stage-hud" id="stage-hud"><span class="dot"></span><span id="stage-time">0:00</span></div>
-            </div>
-            <div class="preview-controls">
-              <button id="preview-play" class="icon ghost" disabled title="播放/暂停">▶</button>
-              <div id="preview-scrub" class="preview-scrub">
-                <div class="track"><div class="fill" id="scrub-fill"></div></div>
-                <div class="beats" id="scrub-beats"></div>
-                <div class="playhead" id="scrub-playhead"></div>
-              </div>
-              <div class="time" id="preview-time">0:00 / 0:00</div>
-            </div>
-          </div>
+        <div class="ft-links">
+          <a href="https://github.com/Future-Insight/beatflow" target="_blank" rel="noopener" class="ft-link">GitHub ↗</a>
         </div>
-
-        <!-- 跨两列：图片与导出 -->
-        <div class="panel span-2">
-          <h2 class="panel-title"><span class="num">3</span>图片素材与导出</h2>
-          <div class="dropzone">
-            <input id="image-files" type="file" multiple accept="image/*" />
-          </div>
-          <div id="images-grid" class="images-grid"></div>
-
-          <div style="margin-top:20px; padding-top:16px; border-top:1px solid var(--border);">
-            <div class="row between" style="margin-bottom:10px;">
-              <h2 class="panel-title" style="margin:0;"><span class="num">4</span>导出</h2>
-              <span id="export-status" class="status"></span>
-            </div>
-
-            <div class="rangepair">
-              <div class="field">
-                <span>起始时间（秒）<b id="clip-start-label" style="color:var(--text); margin-left:6px;">0.00</b></span>
-                <input id="clip-start" type="range" min="0" max="0" step="0.01" value="0" />
-              </div>
-              <div class="field">
-                <span>结束时间（秒）<b id="clip-end-label" style="color:var(--text); margin-left:6px;">0.00</b></span>
-                <input id="clip-end" type="range" min="0" max="0" step="0.01" value="0" />
-              </div>
-            </div>
-
-            <div class="row" style="margin-top:14px;">
-              <button id="export-video-btn" disabled>导出视频（webm）</button>
-              <span class="chip" id="clip-duration-chip">片段 0.00s</span>
-              <span style="flex:1;"></span>
-              <span class="chip warn">实时录制 · 耗时 ≈ 片段时长</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <footer class="footer">
-        <span>Tip · 首次请求会唤醒服务器，稍等数秒</span>
-        <span>Beatflow · open source</span>
       </footer>
-    </main>
+    </div>
 
     <script src="https://unpkg.com/wavesurfer.js@7"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1/Sortable.min.js"></script>
