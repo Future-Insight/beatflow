@@ -1,9 +1,26 @@
+import json
+import logging
 import os
 import tempfile
+import time
+from pathlib import Path
 
 from flask import Flask, jsonify, request
 
 from lib import analyze_beats
+
+STATS_DIR = Path(os.environ.get("BEATFLOW_STATS_DIR", "/tmp/beatflow_stats"))
+ANALYZED_LOG = STATS_DIR / "analyzed.jsonl"
+EXPORTED_LOG = STATS_DIR / "exported.jsonl"
+
+
+def _append_jsonl(path: Path, entry: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as f:
+        f.write(json.dumps(entry) + "\n")
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+log = logging.getLogger("beatflow")
 
 
 def _create_app() -> Flask:
@@ -60,7 +77,9 @@ def _create_app() -> Flask:
                 audio_file.save(tmp.name)
                 tmp_path = tmp.name
 
+            log.info("analyze: file=%s method=%s min_interval=%s", audio_file.filename, method, min_interval)
             result = analyze_beats(tmp_path, min_interval=min_interval, method=method)
+            _append_jsonl(ANALYZED_LOG, {"ts": time.time(), "filename": audio_file.filename, "method": method})
             return jsonify(result)
         except Exception as e:
             # 保持错误信息可读，便于前端展示；生产环境可改为更保守的错误输出。
@@ -71,6 +90,23 @@ def _create_app() -> Flask:
                     os.remove(tmp_path)
                 except Exception:
                     pass
+
+    @app.post("/api/export-log")
+    def export_log():
+        payload = request.get_json(silent=True) or {}
+        entry = {"ts": time.time(), **{k: payload.get(k) for k in ("name", "duration", "aspect")}}
+        _append_jsonl(EXPORTED_LOG, entry)
+        log.info("export: %s", payload)
+        return jsonify({"ok": True})
+
+    @app.get("/api/stats")
+    def stats():
+        def count(p):
+            if not p.exists():
+                return 0
+            with p.open("rb") as f:
+                return sum(1 for _ in f)
+        return jsonify({"analyzed": count(ANALYZED_LOG), "exported": count(EXPORTED_LOG)})
 
     return app
 
