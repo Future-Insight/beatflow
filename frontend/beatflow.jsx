@@ -377,6 +377,44 @@ function Footer() {
 function AudioPanel({ track, setTrack, analyzed, onAnalyze, analyzing, waveform, beats, currentTime, duration, playing, onPlay, playRange, onPickPreset, onClearAudio }) {
   const { t } = useT();
   const fileInputRef = useRef(null);
+  const [dragOver, setDragOver] = useState(false);
+  const dragDepthRef = useRef(0);
+
+  const ingestFile = async (f) => {
+    if (!f) return;
+    if (!(f.type ? f.type.startsWith("audio/") : /\.(mp3|wav|m4a|flac|ogg|aac)$/i.test(f.name))) {
+      alert("请拖入音频文件（MP3 / WAV / M4A / FLAC）");
+      return;
+    }
+    const next = await window.BeatflowUploads.handleAudioUpload(f);
+    setTrack(next);
+  };
+
+  const onDragEnter = (e) => {
+    if (!e.dataTransfer || !Array.from(e.dataTransfer.types || []).includes("Files")) return;
+    e.preventDefault();
+    dragDepthRef.current += 1;
+    setDragOver(true);
+  };
+  const onDragOver = (e) => {
+    if (!e.dataTransfer || !Array.from(e.dataTransfer.types || []).includes("Files")) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+  };
+  const onDragLeave = () => {
+    dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+    if (dragDepthRef.current === 0) setDragOver(false);
+  };
+  const onDrop = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragDepthRef.current = 0;
+    setDragOver(false);
+    const f = e.dataTransfer?.files?.[0];
+    if (track) onClearAudio && onClearAudio();
+    await ingestFile(f);
+  };
+
   return (
     <section className="panel">
       <div className="panel-head">
@@ -392,7 +430,13 @@ function AudioPanel({ track, setTrack, analyzed, onAnalyze, analyzing, waveform,
             setTimeout(() => fileInputRef.current?.click(), 0);
           }}>{t("p1.upload_music")}</button>
         </div>
-        <label className={`upload ${track ? "has-file" : ""}`}>
+        <label
+          className={`upload ${track ? "has-file" : ""} ${dragOver ? "drag-over" : ""}`}
+          onDragEnter={onDragEnter}
+          onDragOver={onDragOver}
+          onDragLeave={onDragLeave}
+          onDrop={onDrop}
+        >
           <input ref={fileInputRef} type="file" accept="audio/*" onChange={async (e) => {
             const f = e.target.files && e.target.files[0];
             const next = await window.BeatflowUploads.handleAudioUpload(f);
