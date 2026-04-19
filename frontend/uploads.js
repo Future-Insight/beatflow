@@ -69,21 +69,8 @@
     },
   ];
 
-  // 预置图片集 · 图片放在 frontend/presets/images/<key>/NN.jpg
-  // 来源：Unsplash（免费商用，无需署名）。详情见该目录下的 SOURCES.md。
-  const PRESET_IMAGE_SETS = (() => {
-    const mk = (key, count = 8) =>
-      Array.from({ length: count }, (_, i) =>
-        `./presets/images/${key}/${String(i + 1).padStart(2, "0")}.jpg`);
-    return [
-      { key: "travel",    name: "Travel",    tag: "8 张 · 旅行",     images: mk("travel") },
-      { key: "happiness", name: "Happiness", tag: "8 张 · 快乐",     images: mk("happiness") },
-      { key: "food",      name: "Food",      tag: "8 张 · 美食",     images: mk("food") },
-      { key: "abstract",  name: "Abstract",  tag: "8 张 · 抽象艺术", images: mk("abstract") },
-    ];
-  })();
-
-  const DEMO_TRACK = PRESET_TRACKS[0];
+  // 首次加载随机选中一个预置音乐
+  const DEMO_TRACK = PRESET_TRACKS[Math.floor(Math.random() * PRESET_TRACKS.length)];
   const DEMO_SWATCHES = [
     { c1: "#ff3b4e", c2: "#ff9a3c", label: "SCENE_01 · neon dusk" },
     { c1: "#6b5cff", c2: "#d65cff", label: "SCENE_02 · violet bloom" },
@@ -94,6 +81,21 @@
     { c1: "#ff6b9d", c2: "#c06c84", label: "SCENE_07 · dream pink" },
     { c1: "#38b6ff", c2: "#2ecc71", label: "SCENE_08 · aquaria" },
   ];
+
+  // 预置图片集 · 图片放在 frontend/presets/images/<key>/NN.jpg
+  // 来源：Unsplash（免费商用，无需署名）。详情见该目录下的 SOURCES.md。
+  // 第一项为颜色预设：使用 DEMO_SWATCHES 渐变卡片，不加载图片文件。
+  const PRESET_IMAGE_SETS = (() => {
+    const mk = (key, count = 8) =>
+      Array.from({ length: count }, (_, i) =>
+        `./presets/images/${key}/${String(i + 1).padStart(2, "0")}.jpg`);
+    return [
+      { key: "colors",    name: "Colors",    tag: "8 张 · 颜色卡片", kind: "swatch", swatches: DEMO_SWATCHES },
+      { key: "travel",    name: "Travel",    tag: "8 张 · 旅行",     images: mk("travel") },
+      { key: "happiness", name: "Happiness", tag: "8 张 · 快乐",     images: mk("happiness") },
+      { key: "abstract",  name: "Abstract",  tag: "8 张 · 抽象艺术", images: mk("abstract") },
+    ];
+  })();
 
   function prettySize(bytes) {
     if (!bytes || bytes < 1024) return (bytes || 0) + " B";
@@ -190,7 +192,15 @@
   }
 
   function loadImageSet(set) {
-    if (!set || !Array.isArray(set.images)) return [];
+    if (!set) return [];
+    if (set.kind === "swatch" && Array.isArray(set.swatches)) {
+      return set.swatches.map((s, i) => ({
+        id: `${set.key}_${Date.now()}_${i}`,
+        type: "swatch",
+        ...s,
+      }));
+    }
+    if (!Array.isArray(set.images)) return [];
     return set.images.map((src, i) => ({
       id:    `${set.key}_${Date.now()}_${i}`,
       type:  "url",

@@ -759,19 +759,26 @@ function MediaExportPanel({ images, setImages, addDemo, duration, playRange, set
           </div>
 
           <div className="preset-sets">
-            {PRESET_IMAGE_SETS.map(s => (
-              <button key={s.key} className="preset-set" onClick={() => onLoadImageSet(s)}>
-                <div className="ps-strip">
-                  {s.images.slice(0, 5).map((src, i) => (
-                    <img key={i} src={src} alt="" loading="lazy" />
-                  ))}
-                </div>
-                <div className="ps-meta">
-                  <div className="ps-name">{s.name}</div>
-                  <div className="ps-tag">{s.images.length} {t("p2.images")}</div>
-                </div>
-              </button>
-            ))}
+            {PRESET_IMAGE_SETS.map(s => {
+              const count = s.kind === "swatch" ? s.swatches.length : s.images.length;
+              return (
+                <button key={s.key} className="preset-set" onClick={() => onLoadImageSet(s)}>
+                  <div className="ps-strip">
+                    {s.kind === "swatch"
+                      ? s.swatches.slice(0, 5).map((sw, i) => (
+                          <div key={i} style={{background: `linear-gradient(135deg, ${sw.c1}, ${sw.c2})`}} />
+                        ))
+                      : s.images.slice(0, 5).map((src, i) => (
+                          <img key={i} src={src} alt="" loading="lazy" />
+                        ))}
+                  </div>
+                  <div className="ps-meta">
+                    <div className="ps-name">{s.name}</div>
+                    <div className="ps-tag">{count} {t("p2.images")}</div>
+                  </div>
+                </button>
+              );
+            })}
           </div>
           <div className="thumbs-grid">
             {images.map((img, i) => (
@@ -969,6 +976,9 @@ function App() {
     setCurrentTime(0);
     setPlayRange([0, 0]);
   };
+
+  // 首次加载：自动载入随机预置的音频和预分析节拍
+  useEffect(() => { onPickPreset(DEMO_TRACK); }, []);
 
   const onLoadImageSet = (set) => {
     setImages(window.BeatflowUploads.loadImageSet(set));
