@@ -105,13 +105,15 @@ const I18N = {
     "p2.beats_n": "个节拍",
     "p2.loops": "次循环",
     "p3.title": "图片素材",
-    "p3.subtitle": "DRAG TO REORDER · LOOP-FILLS BEATS",
+    "p3.subtitle": "图片只存本地，不会上传",
     "p3.count_pre": "已上传",
     "p3.count_post": "张 · 拖拽排序决定分配到节拍的顺序",
     "p3.fit_cover": "填充",
     "p3.fit_contain": "适应",
     "p3.fit_stretch": "拉伸",
-    "p3.upload": "上传图片",
+    "p3.order_seq": "固定",
+    "p3.order_rand": "随机",
+    "p3.upload": "选择图片",
     "p4.title": "导出",
     "p4.subtitle": "EXPORT · WEBM / MP4",
     "p4.range_label": "片段范围",
@@ -122,7 +124,7 @@ const I18N = {
     "p4.fmt": "格式",
     "p4.export": "导出视频",
     "p4.exporting": "录制中…",
-    "p4.note": "本地录制 · 耗时 ≈ 片段时长",
+    "p4.note": "本机导出 · 请保持本页可见，切走窗口会导致卡点错位",
     "tweaks.title": "Tweaks",
     "tweaks.accent": "主题色",
     "tweaks.aspect": "预览比例",
@@ -203,13 +205,15 @@ const I18N = {
     "p2.beats_n": "beats",
     "p2.loops": "loops",
     "p3.title": "Image Library",
-    "p3.subtitle": "DRAG TO REORDER · LOOP-FILLS BEATS",
+    "p3.subtitle": "IMAGES STAY LOCAL · NEVER UPLOADED",
     "p3.count_pre": "Uploaded",
     "p3.count_post": "images · drag to set order",
     "p3.fit_cover": "Cover",
     "p3.fit_contain": "Contain",
     "p3.fit_stretch": "Stretch",
-    "p3.upload": "Upload",
+    "p3.order_seq": "Fixed",
+    "p3.order_rand": "Random",
+    "p3.upload": "Pick",
     "p4.title": "Export",
     "p4.subtitle": "EXPORT · WEBM / MP4",
     "p4.range_label": "Segment",
@@ -220,7 +224,7 @@ const I18N = {
     "p4.fmt": "fmt",
     "p4.export": "Export",
     "p4.exporting": "Recording…",
-    "p4.note": "local render · ≈ clip duration",
+    "p4.note": "Local export · keep this tab visible — switching away desyncs beats",
     "tweaks.title": "Tweaks",
     "tweaks.accent": "Accent color",
     "tweaks.aspect": "Aspect",
@@ -690,11 +694,20 @@ function PreviewPanel({ aspect, setAspect, playing, onPlay, currentTime, duratio
 /* =================================================
    THUMBS + EXPORT
    ================================================= */
-function MediaExportPanel({ images, setImages, addDemo, duration, playRange, setPlayRange, exporting, onExport, exportProgress, activeImageIdx, aspect, fitMode, setFitMode, onLoadImageSet }) {
+function MediaExportPanel({ images, setImages, duration, playRange, setPlayRange, exporting, onExport, exportProgress, activeImageIdx, aspect, fitMode, setFitMode, onLoadImageSet, myImages, setMyImages, orderMode, setOrderMode }) {
   const { t } = useT();
   const [dragIdx, setDragIdx] = useState(-1);
   const [overIdx, setOverIdx] = useState(-1);
   const [overSide, setOverSide] = useState("left");
+  const [previewIdx, setPreviewIdx] = useState(-1);
+  const uploadInputRef = useRef(null);
+
+  useEffect(() => {
+    if (previewIdx < 0) return;
+    const onKey = (e) => { if (e.key === "Escape") setPreviewIdx(-1); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [previewIdx]);
 
   const onThumbDragStart = (i) => (e) => {
     setDragIdx(i);
@@ -719,7 +732,15 @@ function MediaExportPanel({ images, setImages, addDemo, duration, playRange, set
     setDragIdx(-1); setOverIdx(-1);
   };
 
-  const removeImage = (i) => () => setImages(images.filter((_, j) => j !== i));
+  const removeImage = (i) => async () => {
+    const img = images[i];
+    setImages(images.filter((_, j) => j !== i));
+    if (img && img.type === "local") {
+      try { await window.BeatflowMyImages.remove(img.id); } catch (e) { console.error(e); }
+      setMyImages(prev => prev.filter(m => m.id !== img.id));
+      try { URL.revokeObjectURL(img.src); } catch {}
+    }
+  };
 
   const [start, end] = playRange;
   const segDur = Math.max(0, end - start);
@@ -740,6 +761,14 @@ function MediaExportPanel({ images, setImages, addDemo, duration, playRange, set
             <div style={{display:"flex", gap:8, alignItems:"center"}}>
               <div className="seg fit-seg">
                 {[
+                  {k:"sequential", label: t("p3.order_seq")},
+                  {k:"random",     label: t("p3.order_rand")},
+                ].map(o => (
+                  <button key={o.k} className={orderMode === o.k ? "on" : ""} onClick={() => setOrderMode(o.k)}>{o.label}</button>
+                ))}
+              </div>
+              <div className="seg fit-seg">
+                {[
                   {k:"cover", label: t("p3.fit_cover")},
                   {k:"contain", label: t("p3.fit_contain")},
                   {k:"stretch", label: t("p3.fit_stretch")},
@@ -749,9 +778,18 @@ function MediaExportPanel({ images, setImages, addDemo, duration, playRange, set
               </div>
               <label className="btn">
                 {t("p3.upload")}
-                <input type="file" accept="image/*" multiple onChange={async (e) => {
-                  const added = await window.BeatflowUploads.handleImageUpload(e.target.files);
-                  setImages([...images, ...added]);
+                <input ref={uploadInputRef} type="file" accept="image/*" multiple onChange={async (e) => {
+                  const files = Array.from(e.target.files || []);
+                  const added = [];
+                  for (const f of files) {
+                    try { added.push(await window.BeatflowMyImages.add(f)); }
+                    catch (err) { console.error(err); alert(`保存图片失败：${err && err.message || err}`); }
+                  }
+                  if (added.length) {
+                    const next = [...myImages, ...added];
+                    setMyImages(next);
+                    setImages(next); // 选完跳到"我的图片"
+                  }
                   e.target.value = "";
                 }} />
               </label>
@@ -760,17 +798,33 @@ function MediaExportPanel({ images, setImages, addDemo, duration, playRange, set
 
           <div className="preset-sets">
             {PRESET_IMAGE_SETS.map(s => {
-              const count = s.kind === "swatch" ? s.swatches.length : s.images.length;
+              const isMine = s.kind === "mine";
+              const count = isMine
+                ? myImages.length
+                : s.kind === "swatch" ? s.swatches.length : s.images.length;
+              const onClick = () => {
+                if (isMine && myImages.length === 0) {
+                  uploadInputRef.current && uploadInputRef.current.click();
+                  return;
+                }
+                onLoadImageSet(s);
+              };
               return (
-                <button key={s.key} className="preset-set" onClick={() => onLoadImageSet(s)}>
+                <button key={s.key} className="preset-set" onClick={onClick}>
                   <div className="ps-strip">
-                    {s.kind === "swatch"
-                      ? s.swatches.slice(0, 5).map((sw, i) => (
-                          <div key={i} style={{background: `linear-gradient(135deg, ${sw.c1}, ${sw.c2})`}} />
-                        ))
-                      : s.images.slice(0, 5).map((src, i) => (
-                          <img key={i} src={src} alt="" loading="lazy" />
-                        ))}
+                    {isMine
+                      ? (myImages.length === 0
+                          ? <div style={{display:"flex", alignItems:"center", justifyContent:"center", color:"var(--fg-muted)", fontSize:14, border:"1px dashed var(--line)", borderRadius:5}}>+</div>
+                          : myImages.slice(0, 5).map((m, i) => (
+                              <img key={i} src={m.src} alt="" loading="lazy" />
+                            )))
+                      : s.kind === "swatch"
+                        ? s.swatches.slice(0, 5).map((sw, i) => (
+                            <div key={i} style={{background: `linear-gradient(135deg, ${sw.c1}, ${sw.c2})`}} />
+                          ))
+                        : s.images.slice(0, 5).map((src, i) => (
+                            <img key={i} src={src} alt="" loading="lazy" />
+                          ))}
                   </div>
                   <div className="ps-meta">
                     <div className="ps-name">{s.name}</div>
@@ -785,6 +839,7 @@ function MediaExportPanel({ images, setImages, addDemo, duration, playRange, set
               <div key={img.id}
                    className={`thumb ${i === activeImageIdx ? "active" : ""} ${i === dragIdx ? "dragging" : ""} ${overIdx === i && overSide === "left" ? "drop-left" : ""} ${overIdx === i && overSide === "right" ? "drop-right" : ""}`}
                    draggable
+                   onClick={() => setPreviewIdx(i)}
                    onDragStart={onThumbDragStart(i)}
                    onDragOver={onThumbDragOver(i)}
                    onDrop={onThumbDrop}
@@ -795,14 +850,16 @@ function MediaExportPanel({ images, setImages, addDemo, duration, playRange, set
                   </div>
                 ) : <img src={img.src} alt="" />}
                 <div className="idx">{i+1}</div>
-                <div className="del" onClick={removeImage(i)}>×</div>
-                <div className="drag-grip">⋮⋮</div>
+                <div className="del" onClick={(e) => { e.stopPropagation(); removeImage(i)(); }}>×</div>
+                <div className="drag-grip" onClick={(e) => e.stopPropagation()}>⋮⋮</div>
               </div>
             ))}
-            <div className="thumb-add" onClick={addDemo}>
-              <div className="plus">+</div>
-              <div className="t">ADD</div>
-            </div>
+            {images.every(img => img.type === "local") && (
+              <div className="thumb-add" onClick={() => uploadInputRef.current && uploadInputRef.current.click()}>
+                <div className="plus">+</div>
+                <div className="t">ADD</div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -849,14 +906,41 @@ function MediaExportPanel({ images, setImages, addDemo, duration, playRange, set
             </button>
             {exporting && (
               <div className="export-progress">
-                <div className="bar" style={{width: `${exportProgress*100}%`}}/>
                 <div className="lbl">{Math.round(exportProgress*100)}%</div>
+                <div className="track">
+                  <div className="bar" style={{width: `${exportProgress*100}%`}}/>
+                </div>
               </div>
             )}
             <div className="export-note">{t("p4.note")}</div>
           </div>
         </div>
       </div>
+      {previewIdx >= 0 && images[previewIdx] && (
+        <div
+          onClick={() => setPreviewIdx(-1)}
+          style={{
+            position:"fixed", inset:0, background:"rgba(0,0,0,.85)",
+            display:"flex", alignItems:"center", justifyContent:"center",
+            zIndex:1000, cursor:"zoom-out"
+          }}>
+          {images[previewIdx].type === "swatch" ? (
+            <div style={{
+              width:"min(80vw, 80vh)", height:"min(80vw, 80vh)",
+              background:`linear-gradient(135deg, ${images[previewIdx].c1}, ${images[previewIdx].c2})`,
+              borderRadius:12, display:"flex", alignItems:"center", justifyContent:"center",
+              color:"#fff", fontFamily:"var(--font-mono)", fontSize:20, opacity:.9
+            }}>{images[previewIdx].label || `#${String(previewIdx+1).padStart(2,"0")}`}</div>
+          ) : (
+            <img src={images[previewIdx].src} alt=""
+              style={{maxWidth:"90vw", maxHeight:"90vh", objectFit:"contain", borderRadius:6}} />
+          )}
+          <div style={{
+            position:"fixed", top:20, right:24, color:"#fff", fontSize:14,
+            fontFamily:"var(--font-mono)", opacity:.7, pointerEvents:"none"
+          }}>#{String(previewIdx+1).padStart(2,"0")} · esc</div>
+        </div>
+      )}
     </section>
   );
 }
@@ -932,6 +1016,8 @@ function App() {
   const [tweaks, setTweaks] = useState(TWEAKS);
   const [tweaksVisible, setTweaksVisible] = useState(false);
   const [fitMode, setFitMode] = useState("cover"); // cover | contain | stretch
+  const [orderMode, setOrderMode] = useState("sequential"); // sequential | random
+  const [myImages, setMyImages] = useState([]); // IndexedDB 持久化的"我的图片"库
   const audioRef = useRef(null);
 
   const [lang, setLang] = useState(() => {
@@ -945,6 +1031,23 @@ function App() {
   const toggleTheme = () => { const n = theme === "dark" ? "light" : "dark"; setTheme(n); try { localStorage.setItem("bf_theme", n); } catch(e) {} };
   useEffect(() => { document.documentElement.setAttribute("data-theme", theme); }, [theme]);
   useEffect(() => { document.documentElement.setAttribute("lang", lang === "zh" ? "zh-CN" : "en"); }, [lang]);
+
+  // 启动加载"我的图片"库；非空时默认全部填进节拍序列
+  useEffect(() => {
+    (async () => {
+      try {
+        await window.BeatflowMyImages.initDB();
+        const list = await window.BeatflowMyImages.list();
+        if (list.length > 0) {
+          setMyImages(list);
+          setImages(list);
+        }
+      } catch (e) { console.error("BeatflowMyImages init failed:", e); }
+    })();
+    // 卸载时回收所有 blob URL
+    return () => { window.BeatflowMyImages && window.BeatflowMyImages.revokeAll(myImages); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const onPickPreset = async (p) => {
     setPlaying(false);
@@ -981,6 +1084,7 @@ function App() {
   useEffect(() => { onPickPreset(DEMO_TRACK); }, []);
 
   const onLoadImageSet = (set) => {
+    if (set && set.kind === "mine") { setImages(myImages); return; }
     setImages(window.BeatflowUploads.loadImageSet(set));
   };
 
@@ -994,6 +1098,19 @@ function App() {
   }, [analyzed, bpm, duration, track]);
   const waveform = useMemo(() => analyzed ? buildWaveform(2400, bpm || 120, duration) : null, [analyzed, bpm, duration]);
 
+  // 随机顺序：一个下标置换数组，长度 === images.length
+  // 切到 random 或 images.length 变化时重洗一次
+  const [randomOrder, setRandomOrder] = useState([]);
+  useEffect(() => {
+    if (orderMode !== "random") { setRandomOrder([]); return; }
+    const a = Array.from({ length: images.length }, (_, i) => i);
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    setRandomOrder(a);
+  }, [orderMode, images.length]);
+
   // Which image is showing? image index = (beat index passed) mod images.length
   const activeImageIdx = useMemo(() => {
     if (!images.length) return 0;
@@ -1001,6 +1118,12 @@ function App() {
     for (let i = 0; i < beats.length; i++) if (beats[i] <= currentTime) passed = i + 1;
     return Math.max(0, (passed - 1)) % images.length;
   }, [currentTime, beats, images.length]);
+
+  // 随机模式下：把 activeImageIdx 映射成 images 中的另一个下标
+  const displayImageIdx = useMemo(() => {
+    if (orderMode !== "random" || randomOrder.length !== images.length) return activeImageIdx;
+    return randomOrder[activeImageIdx] ?? activeImageIdx;
+  }, [activeImageIdx, orderMode, randomOrder, images.length]);
 
   /* ---- playback loop ---- */
   const rafRef = useRef(null);
@@ -1119,19 +1242,17 @@ function App() {
   };
 
   /* ---- add images (via uploads.js swap-in) ---- */
-  const addDemo = async () => {
-    const added = await window.BeatflowUploads.handleImageUpload(1);
-    setImages([...images, ...added]);
-  };
-
   /* ---- export (simulated) ---- */
   /* ---- export (delegated to export.js swap-in) ---- */
   const onExport = async () => {
     setExporting(true);
     setExportProgress(0);
     try {
+      const imgsForExport = (orderMode === "random" && randomOrder.length === images.length)
+        ? randomOrder.map(i => images[i])
+        : images;
       await window.BeatflowExport.exportVideo({
-        track, images, beats, playRange,
+        track, images: imgsForExport, beats, playRange,
         aspect: tweaks.aspect || "9:16",
         fitMode, format: "webm", fps: 30,
         onProgress: setExportProgress,
@@ -1185,20 +1306,22 @@ function App() {
           playing={playing} onPlay={() => setPlaying(p => !p)}
           currentTime={currentTime} duration={duration} beats={beats}
           onSeek={onSeek}
-          images={images} activeImageIdx={activeImageIdx}
+          images={images} activeImageIdx={displayImageIdx}
           pulseKey={pulseKey} pulseMs={tweaks.pulseMs || 180}
           exporting={exporting} exportProgress={exportProgress}
           fitMode={fitMode}
           playRange={playRange} setPlayRange={setPlayRange}
         />
         <MediaExportPanel
-          images={images} setImages={setImages} addDemo={addDemo}
+          images={images} setImages={setImages}
           duration={duration} playRange={playRange} setPlayRange={setPlayRange}
           exporting={exporting} onExport={onExport} exportProgress={exportProgress}
-          activeImageIdx={activeImageIdx}
+          activeImageIdx={displayImageIdx}
           aspect={tweaks.aspect || "9:16"}
           fitMode={fitMode} setFitMode={setFitMode}
           onLoadImageSet={onLoadImageSet}
+          myImages={myImages} setMyImages={setMyImages}
+          orderMode={orderMode} setOrderMode={setOrderMode}
         />
       </div>
       <Footer />

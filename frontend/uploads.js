@@ -90,6 +90,8 @@
       Array.from({ length: count }, (_, i) =>
         `./presets/images/${key}/${String(i + 1).padStart(2, "0")}.jpg`);
     return [
+      // 我的图片：纯渲染期信号，内容由 beatflow.jsx 从 myImages state 注入
+      { key: "mine",      name: "我的图片",  tag: "本地 IndexedDB · 不上传", kind: "mine" },
       { key: "colors",    name: "Colors",    tag: "8 张 · 颜色卡片", kind: "swatch", swatches: DEMO_SWATCHES },
       { key: "travel",    name: "Travel",    tag: "8 张 · 旅行",     images: mk("travel") },
       { key: "happiness", name: "Happiness", tag: "8 张 · 快乐",     images: mk("happiness") },
