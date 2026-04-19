@@ -272,6 +272,7 @@
     getDefaultTrack,
     getInitialImages,
     loadImageSet,
+    getApiUrl,
     _DEMO_TRACK: DEMO_TRACK,
     _DEMO_SWATCHES: DEMO_SWATCHES,
   };

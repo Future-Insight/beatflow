@@ -52,6 +52,7 @@ const fmtTime = (s) => {
 const I18N = {
   zh: {
     "brand.sub": "节拍卡点工作台",
+    "brand.live": "在线体验",
     "hero.title1": "让音乐替你",
     "hero.title2": "剪出每一个节拍。",
     "hero.sub": "上传一首音乐 + 选择图片，分析 BPM 与节拍点，图片按节拍切换。所见即所得，直接导出为",
@@ -67,9 +68,14 @@ const I18N = {
     "stat.bpm_unit": "beats/min",
     "stat.duration_unit": "sec",
     "stat.beats_unit": "hits",
+    "stat.analyzed": "已分析",
+    "stat.exported": "已导出",
+    "stat.analyzed_tip": "累计分析过的音乐数量",
+    "stat.exported_tip": "累计导出过的视频数量",
     "p1.title": "音频与节拍",
     "p1.subtitle": "AUDIO · BEAT DETECTION",
     "p1.audio_file": "音频文件",
+    "p1.upload_music": "上传音乐",
     "p1.upload_hint": "点击上传 或拖入音频文件",
     "p1.upload_formats": "MP3 · WAV · M4A · FLAC · 最大 50MB",
     "p1.parsed": "已解析",
@@ -146,12 +152,12 @@ const I18N = {
     "footer.legal": "条款",
     "footer.privacy": "隐私政策",
     "footer.terms": "使用条款",
-    "footer.license": "开源协议",
     "footer.attribution": "致谢与引用",
     "footer.copy_tail": "保留所有权利 · Made in the browser",
   },
   en: {
     "brand.sub": "beat-cut workbench",
+    "brand.live": "Live app",
     "hero.title1": "Let the music",
     "hero.title2": "cut every beat for you.",
     "hero.sub": "Upload a song + pick images. Analyze BPM and beats, images switch on every beat. WYSIWYG — export directly to",
@@ -167,9 +173,14 @@ const I18N = {
     "stat.bpm_unit": "beats/min",
     "stat.duration_unit": "sec",
     "stat.beats_unit": "hits",
+    "stat.analyzed": "Analyzed",
+    "stat.exported": "Exported",
+    "stat.analyzed_tip": "Total analyzed tracks",
+    "stat.exported_tip": "Total exported videos",
     "p1.title": "Audio & Beats",
     "p1.subtitle": "AUDIO · BEAT DETECTION",
     "p1.audio_file": "Audio file",
+    "p1.upload_music": "Upload music",
     "p1.upload_hint": "Click to upload or drop audio file",
     "p1.upload_formats": "MP3 · WAV · M4A · FLAC · max 50MB",
     "p1.parsed": "parsed",
@@ -246,13 +257,12 @@ const I18N = {
     "footer.legal": "Legal",
     "footer.privacy": "Privacy",
     "footer.terms": "Terms",
-    "footer.license": "License",
     "footer.attribution": "Attribution",
     "footer.copy_tail": "All rights reserved · Made in the browser",
   },
 };
 
-const I18nCtx = React.createContext({ lang: "zh", t: (k) => I18N.zh[k] || k });
+const I18nCtx = React.createContext({ lang: "en", t: (k) => I18N.en[k] || k });
 function useT() { return React.useContext(I18nCtx); }
 
 
@@ -264,7 +274,7 @@ const sendTweak = (edits) => {
 /* =================================================
    HERO
    ================================================= */
-function Hero({ bpm, duration, beatCount, lang, theme, onToggleLang, onToggleTheme }) {
+function Hero({ bpm, duration, beatCount, lang, theme, onToggleLang, onToggleTheme, analyzedCount, exportedCount }) {
   const { t } = useT();
   return (
     <header className="hero">
@@ -273,6 +283,17 @@ function Hero({ bpm, duration, beatCount, lang, theme, onToggleLang, onToggleThe
         <div className="brand-name">Beatflow</div>
         <div className="brand-dot">·</div>
         <div className="brand-sub">{t("brand.sub")}</div>
+        <div className="brand-stats">
+          <div className="bs-item" title={t("stat.analyzed_tip")}>
+            <span className="bs-v">{analyzedCount}</span>
+            <span className="bs-k">{t("stat.analyzed")}</span>
+          </div>
+          <div className="bs-sep"/>
+          <div className="bs-item" title={t("stat.exported_tip")}>
+            <span className="bs-v">{exportedCount}</span>
+            <span className="bs-k">{t("stat.exported")}</span>
+          </div>
+        </div>
         <div className="brand-toolbar">
           <button className="tb-btn" onClick={onToggleLang} title="Language" aria-label="Language">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" width="14" height="14">
@@ -293,7 +314,7 @@ function Hero({ bpm, duration, beatCount, lang, theme, onToggleLang, onToggleThe
               </svg>
             )}
           </button>
-          <a className="tb-btn tb-icon" href="https://github.com/" target="_blank" rel="noopener" title="GitHub" aria-label="GitHub">
+          <a className="tb-btn tb-icon" href="https://github.com/Future-Insight/beatflow" target="_blank" rel="noopener" title="GitHub" aria-label="GitHub">
             <svg viewBox="0 0 24 24" fill="currentColor" width="15" height="15">
               <path d="M12 .5C5.65.5.5 5.65.5 12a11.5 11.5 0 0 0 7.86 10.92c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.53-1.35-1.3-1.7-1.3-1.7-1.06-.73.08-.72.08-.72 1.18.08 1.8 1.22 1.8 1.22 1.04 1.78 2.73 1.26 3.4.96.1-.75.41-1.26.74-1.55-2.56-.29-5.25-1.28-5.25-5.7 0-1.26.45-2.29 1.19-3.1-.12-.3-.52-1.48.11-3.08 0 0 .97-.31 3.18 1.18a11.05 11.05 0 0 1 5.78 0c2.2-1.49 3.18-1.18 3.18-1.18.63 1.6.23 2.78.12 3.08.74.81 1.19 1.84 1.19 3.1 0 4.43-2.7 5.4-5.27 5.69.42.36.79 1.07.79 2.17v3.21c0 .32.21.67.8.56A11.5 11.5 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5z"/>
             </svg>
@@ -344,9 +365,7 @@ function Footer() {
         <span className="ft-dim">© {year}</span>
       </div>
       <div className="ft-links">
-        <a href="#" className="ft-link">{t("footer.privacy")}</a>
-        <a href="#" className="ft-link">{t("footer.terms")}</a>
-        <a href="https://github.com/" target="_blank" rel="noopener" className="ft-link">GitHub ↗</a>
+        <a href="https://github.com/Future-Insight/beatflow" target="_blank" rel="noopener" className="ft-link">GitHub ↗</a>
       </div>
     </footer>
   );
@@ -357,6 +376,7 @@ function Footer() {
    ================================================= */
 function AudioPanel({ track, setTrack, analyzed, onAnalyze, analyzing, waveform, beats, currentTime, duration, playing, onPlay, playRange, onPickPreset, onClearAudio }) {
   const { t } = useT();
+  const fileInputRef = useRef(null);
   return (
     <section className="panel">
       <div className="panel-head">
@@ -365,9 +385,15 @@ function AudioPanel({ track, setTrack, analyzed, onAnalyze, analyzing, waveform,
       </div>
 
       <div className="field">
-        <label>{t("p1.audio_file")}</label>
+        <div className="field-label-row">
+          <label>{t("p1.audio_file")}</label>
+          <button type="button" className="field-action" onClick={() => {
+            onClearAudio && onClearAudio();
+            setTimeout(() => fileInputRef.current?.click(), 0);
+          }}>{t("p1.upload_music")}</button>
+        </div>
         <label className={`upload ${track ? "has-file" : ""}`}>
-          <input type="file" accept="audio/*" onChange={async (e) => {
+          <input ref={fileInputRef} type="file" accept="audio/*" onChange={async (e) => {
             const f = e.target.files && e.target.files[0];
             const next = await window.BeatflowUploads.handleAudioUpload(f);
             setTrack(next);
@@ -1021,12 +1047,21 @@ function App() {
   const audioRef = useRef(null);
 
   const [lang, setLang] = useState(() => {
-    try { return localStorage.getItem("bf_lang") || "zh"; } catch(e) { return "zh"; }
+    try { return localStorage.getItem("bf_lang") || "en"; } catch(e) { return "en"; }
   });
+  const [stats, setStats] = useState({ analyzed: 0, exported: 0 });
+  const refreshStats = useCallback(async () => {
+    try {
+      const base = (window.BeatflowUploads.getApiUrl?.() || "").replace(/\/+$/, "");
+      const r = await fetch(`${base}/api/stats`);
+      if (r.ok) setStats(await r.json());
+    } catch (e) { /* ignore offline */ }
+  }, []);
+  useEffect(() => { refreshStats(); }, [refreshStats]);
   const [theme, setTheme] = useState(() => {
     try { return localStorage.getItem("bf_theme") || "dark"; } catch(e) { return "dark"; }
   });
-  const t = useCallback((k) => (I18N[lang] && I18N[lang][k]) || I18N.zh[k] || k, [lang]);
+  const t = useCallback((k) => (I18N[lang] && I18N[lang][k]) || I18N.en[k] || k, [lang]);
   const toggleLang = () => { const n = lang === "zh" ? "en" : "zh"; setLang(n); try { localStorage.setItem("bf_lang", n); } catch(e) {} };
   const toggleTheme = () => { const n = theme === "dark" ? "light" : "dark"; setTheme(n); try { localStorage.setItem("bf_theme", n); } catch(e) {} };
   useEffect(() => { document.documentElement.setAttribute("data-theme", theme); }, [theme]);
@@ -1234,6 +1269,7 @@ function App() {
         await new Promise((r) => setTimeout(r, 900));
       }
       setAnalyzed(true);
+      refreshStats();
     } catch (e) {
       alert(`分析失败：${e?.message || e}`);
     } finally {
@@ -1257,6 +1293,19 @@ function App() {
         fitMode, format: "webm", fps: 30,
         onProgress: setExportProgress,
       });
+      try {
+        const base = (window.BeatflowUploads.getApiUrl?.() || "").replace(/\/+$/, "");
+        await fetch(`${base}/api/export-log`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: track?.name,
+            duration: (playRange?.[1] ?? 0) - (playRange?.[0] ?? 0),
+            aspect: tweaks.aspect || "9:16",
+          }),
+        });
+      } catch (e) { /* ignore offline */ }
+      refreshStats();
     } catch (err) {
       if (err && err.name !== "AbortError") console.error(err);
     } finally {
@@ -1288,7 +1337,7 @@ function App() {
 
   return (
     <I18nCtx.Provider value={{ lang, t }}>
-      <Hero bpm={bpm} duration={duration} beatCount={beats.length} lang={lang} theme={theme} onToggleLang={toggleLang} onToggleTheme={toggleTheme} />
+      <Hero bpm={bpm} duration={duration} beatCount={beats.length} lang={lang} theme={theme} onToggleLang={toggleLang} onToggleTheme={toggleTheme} analyzedCount={stats.analyzed} exportedCount={stats.exported} />
       <div className="grid">
         <AudioPanel
           track={track} setTrack={setTrack}
