@@ -51,7 +51,7 @@ const fmtTime = (s) => {
 /* ----------------- i18n ----------------- */
 const I18N = {
   zh: {
-    "brand.sub": "节拍卡点工作台 / v0.9 beta",
+    "brand.sub": "节拍卡点工作台",
     "hero.title1": "让音乐替你",
     "hero.title2": "剪出每一个节拍。",
     "hero.sub": "上传一首音乐 + 选择图片，分析 BPM 与节拍点，图片按节拍切换。所见即所得，直接导出为",
@@ -151,7 +151,7 @@ const I18N = {
     "footer.copy_tail": "保留所有权利 · Made in the browser",
   },
   en: {
-    "brand.sub": "beat-cut workbench / v0.9 beta",
+    "brand.sub": "beat-cut workbench",
     "hero.title1": "Let the music",
     "hero.title2": "cut every beat for you.",
     "hero.sub": "Upload a song + pick images. Analyze BPM and beats, images switch on every beat. WYSIWYG — export directly to",

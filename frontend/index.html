@@ -3,7 +3,51 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Beatflow · 节拍卡点工作台</title>
+<title>Beatflow · AI 卡点视频生成器 | 音乐节拍自动剪辑工作台</title>
+
+<meta name="description" content="Beatflow 是一款浏览器端的 AI 卡点视频生成工具：上传音乐自动检测节拍 BPM，结合 AI 图片一键合成抖音/小红书风格的节奏卡点短视频，支持 Ken Burns 缩放、可灵 AI 图库导入与 GPU 加速渲染。" />
+<meta name="keywords" content="卡点视频,AI卡点视频,卡点视频生成器,节拍检测,BPM检测,音乐卡点,节奏剪辑,AI视频生成,AI图片视频,短视频制作,抖音卡点,小红书卡点,音乐可视化,自动剪辑,Ken Burns,可灵AI,Kling AI,Beatflow,节拍卡点工作台,beat detection,onset detection,music video generator" />
+<meta name="author" content="Beatflow" />
+<meta name="robots" content="index,follow" />
+<meta name="googlebot" content="index,follow" />
+<meta name="format-detection" content="telephone=no" />
+<meta name="theme-color" content="#0b0b0f" media="(prefers-color-scheme: dark)" />
+<meta name="theme-color" content="#f5f5f2" media="(prefers-color-scheme: light)" />
+<link rel="canonical" href="https://future-insight.github.io/beatflow/" />
+
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Beatflow" />
+<meta property="og:title" content="Beatflow · AI 卡点视频生成器 | 音乐节拍自动剪辑工作台" />
+<meta property="og:description" content="上传音乐自动检测节拍，结合 AI 图片一键合成抖音/小红书风格的节奏卡点短视频，支持 Ken Burns 缩放与 GPU 加速渲染。" />
+<meta property="og:url" content="https://future-insight.github.io/beatflow/" />
+<meta property="og:image" content="https://future-insight.github.io/beatflow/og-cover.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content="Beatflow · AI 卡点视频生成器工作台界面预览" />
+<meta property="og:locale" content="zh_CN" />
+<meta property="og:locale:alternate" content="en_US" />
+
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Beatflow · AI 卡点视频生成器" />
+<meta name="twitter:description" content="音乐节拍驱动的 AI 卡点视频自动化生成工作台。" />
+<meta name="twitter:image" content="https://future-insight.github.io/beatflow/og-cover.png" />
+<meta name="twitter:image:alt" content="Beatflow · AI 卡点视频生成器工作台界面预览" />
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Beatflow",
+  "alternateName": "节拍卡点工作台",
+  "description": "音乐节拍驱动的 AI 卡点视频自动化生成工具，支持节拍检测、AI 图片拼接与 Ken Burns 缩放效果。",
+  "applicationCategory": "MultimediaApplication",
+  "operatingSystem": "Any (Web Browser)",
+  "inLanguage": "zh-CN",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "CNY" },
+  "keywords": "卡点视频, AI 视频生成, 节拍检测, BPM, 音乐卡点, 自动剪辑, 可灵 AI"
+}
+</script>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;600;700&display=swap">
@@ -355,7 +399,7 @@
     --w: 270px;
     width: var(--w); aspect-ratio: 9 / 16;
     background: #000;
-    border-radius: 22px;
+    border-radius: 0;
     border: 1px solid var(--line-2);
     position: relative;
     overflow: hidden;
@@ -381,16 +425,7 @@
     position: relative;
   }
   .stage .pulse {
-    position: absolute; inset: 0;
-    border: 3px solid rgba(255,255,255,.95);
-    border-radius: 22px;
-    opacity: 0;
-    pointer-events: none;
-  }
-  .stage .pulse.fire { animation: pulseFire var(--pulse-ms, 180ms) ease-out; }
-  @keyframes pulseFire {
-    0% { opacity: 1; transform: scale(1); }
-    100% { opacity: 0; transform: scale(1.02); }
+    display: none;
   }
   .stage-hud {
     position: absolute; top: 12px; left: 12px; right: 12px;
