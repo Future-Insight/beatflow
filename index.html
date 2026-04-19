@@ -621,6 +621,16 @@
       background: var(--bg-3);
     }
 
+    .upload.drag-over {
+      border-color: var(--accent);
+      background: var(--bg-3);
+      box-shadow: 0 0 0 3px rgba(255, 59, 78, .12) inset;
+    }
+
+    .upload.drag-over * {
+      pointer-events: none;
+    }
+
     .upload {
       position: relative;
     }
