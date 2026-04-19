@@ -76,10 +76,8 @@ const I18N = {
     "p1.presets": "预置曲目",
     "p1.presets_hint": "一键载入，跳过分析",
     "p1.method": "检测方法",
-    "p1.method.pop": "流行音乐 · Onset + Spectral Flux",
-    "p1.method.classical": "古典音乐 · Tempo Autocorrelation",
-    "p1.method.electronic": "电子音乐 · Kick-locked",
-    "p1.method.acoustic": "原声 · Transient",
+    "p1.method.beat": "beat · 流行/电子/舞曲 · 强拍定位",
+    "p1.method.onset": "onset · 氛围/古典/复杂节奏 · 能量突变",
     "p1.min_interval": "最小节拍间隔",
     "p1.sec": "sec",
     "p1.analyze": "开始分析",
@@ -176,10 +174,8 @@ const I18N = {
     "p1.presets": "Presets",
     "p1.presets_hint": "one-click load, skip analysis",
     "p1.method": "Detection method",
-    "p1.method.pop": "Pop · Onset + Spectral Flux",
-    "p1.method.classical": "Classical · Tempo Autocorrelation",
-    "p1.method.electronic": "Electronic · Kick-locked",
-    "p1.method.acoustic": "Acoustic · Transient",
+    "p1.method.beat": "beat · pop/dance · downbeats",
+    "p1.method.onset": "onset · ambient/classical · transients",
     "p1.min_interval": "Min beat interval",
     "p1.sec": "sec",
     "p1.analyze": "Analyze",
@@ -410,16 +406,14 @@ function AudioPanel({ track, setTrack, analyzed, onAnalyze, analyzing, waveform,
       </div>
 
       <div className="row">
-        <div className="field">
+        <div className="field" style={{ flex: 2 }}>
           <label>{t("p1.method")}</label>
-          <select className="select" value={track?.method || "pop"} onChange={(e) => track && setTrack({ ...track, method: e.target.value })}>
-            <option value="pop">{t("p1.method.pop")}</option>
-            <option value="classical">{t("p1.method.classical")}</option>
-            <option value="electronic">{t("p1.method.electronic")}</option>
-            <option value="acoustic">{t("p1.method.acoustic")}</option>
+          <select className="select" value={track?.method || "beat"} onChange={(e) => track && setTrack({ ...track, method: e.target.value })}>
+            <option value="beat">{t("p1.method.beat")}</option>
+            <option value="onset">{t("p1.method.onset")}</option>
           </select>
         </div>
-        <div className="field">
+        <div className="field" style={{ flex: 1 }}>
           <label>{t("p1.min_interval")} <span className="hint">{t("p1.sec")}</span></label>
           <input className="input mono" type="number" step="0.01" min="0.05" max="2"
             value={track?.minInterval ?? 0.18}
@@ -428,7 +422,7 @@ function AudioPanel({ track, setTrack, analyzed, onAnalyze, analyzing, waveform,
       </div>
 
       <div className="row" style={{ marginTop: 4 }}>
-        <button className="btn btn-primary" disabled={!track || analyzing} onClick={onAnalyze}>
+        <button className={`btn ${analyzed ? "btn-ghost" : "btn-primary"}`} disabled={!track || analyzing} onClick={onAnalyze}>
           {analyzing ? <><span className="spinner"/> {t("p1.analyzing")}</> : analyzed ? t("p1.reanalyze") : t("p1.analyze")}
         </button>
         <button className="btn" onClick={onPlay} disabled={!analyzed}>

@@ -34,8 +34,8 @@
       size: "4.39 MB",
       bpm: 74,
       duration: 143.93,
-      method: "acoustic",
-      minInterval: 0.30,
+      method: "onset",
+      minInterval: 0.12,
       mood: "morning calm",
       genre: "AMBIENT",
       url: "./presets/harumachimusic-morning-calm-236192.mp3",
@@ -47,8 +47,8 @@
       size: "3.05 MB",
       bpm: 99,
       duration: 100.05,
-      method: "acoustic",
-      minInterval: 0.30,
+      method: "beat",
+      minInterval: 0.12,
       mood: "christmas",
       genre: "HOLIDAY",
       url: "./presets/leberch-christmas-440431.mp3",
@@ -60,8 +60,8 @@
       size: "4.41 MB",
       bpm: 125,
       duration: 144.43,
-      method: "pop",
-      minInterval: 0.30,
+      method: "beat",
+      minInterval: 0.12,
       mood: "samba",
       genre: "LATIN",
       url: "./presets/tunetank-samba-348218.mp3",
@@ -130,7 +130,7 @@
       size: prettySize(file.size),
       bpm: 0,
       duration: duration || 30,
-      method: "pop",
+      method: "beat",
       minInterval: 0.3,
       mood: "custom",
       genre: "UPLOAD",
@@ -139,8 +139,6 @@
       beat_times: null,
     };
   }
-
-  const METHOD_MAP = { pop: "beat", electronic: "beat", classical: "onset", acoustic: "onset" };
 
   async function analyzeTrack(track) {
     if (!track) return track;
@@ -151,7 +149,7 @@
     const url = `${getApiUrl().replace(/\/+$/, "")}/api/analyze`;
     const fd = new FormData();
     fd.append("audio", track.file, track.file.name);
-    fd.append("method", METHOD_MAP[track.method] || "beat");
+    fd.append("method", track.method === "onset" ? "onset" : "beat");
     fd.append("min_interval", String(track.minInterval ?? 0.3));
     const resp = await fetch(url, { method: "POST", body: fd });
     const data = await resp.json().catch(() => ({}));
