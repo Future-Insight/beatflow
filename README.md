@@ -1,6 +1,18 @@
 # Beatflow
 
-**AI-powered beat-cut video generator in your browser · 音乐节拍驱动的 AI 卡点视频自动化生成工作台.**
+> **The open-source, in-browser beat-cut video generator — no login, no upload, 100% local render.**
+>
+> 开源、浏览器内运行的 AI 卡点视频生成器 —— 无需注册、无需上传、本地渲染导出。
+
+<p align="center">
+  <a href="https://future-insight.github.io/beatflow/"><img alt="Live demo" src="https://img.shields.io/badge/demo-live-3ecf8e?style=flat-square&logo=googlechrome&logoColor=white"></a>
+  <a href="https://github.com/Future-Insight/beatflow/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/Future-Insight/beatflow?style=flat-square"></a>
+  <a href="https://github.com/Future-Insight/beatflow/network/members"><img alt="Forks" src="https://img.shields.io/github/forks/Future-Insight/beatflow?style=flat-square"></a>
+  <a href="https://github.com/Future-Insight/beatflow/issues"><img alt="Issues" src="https://img.shields.io/github/issues/Future-Insight/beatflow?style=flat-square"></a>
+  <a href="./LICENSE"><img alt="License: MIT" src="https://img.shields.io/github/license/Future-Insight/beatflow?style=flat-square"></a>
+  <img alt="PRs welcome" src="https://img.shields.io/badge/PRs-welcome-ff69b4?style=flat-square">
+  <img alt="Made with FFmpeg + librosa" src="https://img.shields.io/badge/powered%20by-librosa%20%2B%20WebCodecs-635bff?style=flat-square">
+</p>
 
 [![Beatflow cover](./frontend/og-cover.png)](https://future-insight.github.io/beatflow/)
 
@@ -9,6 +21,20 @@
     <strong>🎬 Try it live / 立即体验 →&nbsp;&nbsp;https://future-insight.github.io/beatflow/</strong>
   </a>
 </p>
+
+---
+
+## Why Beatflow?
+
+|                       | Beatflow       | CapCut / Premiere beat-sync | Generic AI video tools |
+| --------------------- | -------------- | --------------------------- | ---------------------- |
+| Runs in browser       | ✅ zero install | ❌ desktop app               | ⚠️ cloud-only           |
+| Your images leave?    | ❌ never        | depends                     | ✅ uploaded             |
+| Beat-accurate cutting | ✅ frame-level  | ✅                           | ⚠️ loose sync           |
+| Open source           | ✅ MIT          | ❌ proprietary               | ❌                      |
+| Login required        | ❌              | ⚠️                           | ✅                      |
+
+**Built for:** independent musicians sharing singles, AI-art creators turning Midjourney / 可灵 / 即梦 outputs into short-form video, and indie creators who don't want to upload their WIP to a SaaS.
 
 ---
 
@@ -68,6 +94,23 @@ Then open `http://localhost:5173/`.
 
 ## 中文简介
 
+### 它解决什么问题？
+
+- 剪映 / PR 的卡点要手动踩点，**累**
+- 云端 AI 视频工具要**上传图片 + 注册 + 跑额度**
+- 开源工具大多是命令行、没前端、不能所见即所得
+
+**Beatflow 把这三件事合成一件：** 浏览器打开 → 丢音乐 + 图 → 自动踩点 → 所见即所得 → 一键导出。全程图片不离开你的电脑。
+
+### 适合谁用
+
+- 🎵 **独立音乐人**：新歌出封面 / TikTok / 小红书引流视频
+- 🎨 **AI 绘画创作者**：把 Midjourney / 可灵 / 即梦 的出图变成卡点短视频
+- 📱 **短视频博主**：批量做 9:16 卡点，不想把素材上传到任何 SaaS
+- 🛠 **独立开发者**：想要个能自托管、纯前端、可魔改的卡点方案
+
+### 正文介绍
+
 Beatflow 是一款浏览器端的自动节拍卡点视频生成器：上传一首音乐 + 一组图片，系统自动检测节拍 BPM 与强拍时间点，图片按节拍切换，所见即所得，直接导出 `.webm` / `.mp4` 卡点短视频。
 
 - 🎧 **自动节拍检测** —— `beat` 模式（流行/电子，强拍定位） / `onset` 模式（氛围/古典，能量突变）
@@ -110,3 +153,19 @@ python3 -m http.server 5173
 ```
 
 浏览器打开 `http://localhost:5173/` 即可。
+
+---
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=Future-Insight/beatflow&type=Date)](https://star-history.com/#Future-Insight/beatflow&Date)
+
+If Beatflow saved you an afternoon of manual beat-tagging (踩点), a ⭐ would mean a lot — it's the only metric indie devs have.
+
+---
+
+## Credits & 关键词
+
+Beat detection powered by [librosa](https://librosa.org/) · in-browser rendering via WebCodecs + Canvas · static frontend hosted on GitHub Pages.
+
+<sub>Keywords: AI video generator, beat sync, 卡点视频, music video automation, browser video editor, open source CapCut alternative, Midjourney to video, Suno visualizer, 可灵 / 即梦 / 抖音 / 小红书 视频生成</sub>
