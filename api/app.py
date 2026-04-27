@@ -12,21 +12,29 @@ from flask import Flask, jsonify, request
 from lib import analyze_beats
 
 
-def _load_env() -> None:
-    """启动时自动加载同目录 .env（仅当文件存在）。
+# Jamendo client_id 是半公开标识（类似 OAuth client_id，非高敏凭证）。
+# 烤进代码作为默认值，让 HF Space 等部署环境不用单独配 secret。
+# 本地通过 .env / 环境变量仍可覆盖（os.environ.setdefault 优先用既有值）。
+DEFAULT_JAMENDO_CLIENT_ID = "7800a1b4"
 
-    生产环境 fly.io 通过 fly secrets 注入环境变量，.env 不会存在，跳过。
-    本地 dev.sh 不 source .env，靠这里把 JAMENDO_CLIENT_ID 等带进来。
+
+def _load_env() -> None:
+    """启动时自动加载同目录 .env（如存在），并为关键变量设置默认值。
+
+    优先级：shell env > .env 文件 > 代码内置默认值
+    本地 dev.sh 不 source .env，靠 .env 文件把 JAMENDO_CLIENT_ID 等带进来；
+    生产 HF Space 没有 .env，靠下面的 setdefault 兜底。
     """
     env_file = Path(__file__).resolve().parent / ".env"
-    if not env_file.exists():
-        return
-    for line in env_file.read_text(encoding="utf-8").splitlines():
-        line = line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        k, v = line.split("=", 1)
-        os.environ.setdefault(k.strip(), v.strip())
+    if env_file.exists():
+        for line in env_file.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            k, v = line.split("=", 1)
+            os.environ.setdefault(k.strip(), v.strip())
+    # 内置默认（最低优先级）
+    os.environ.setdefault("JAMENDO_CLIENT_ID", DEFAULT_JAMENDO_CLIENT_ID)
 
 
 _load_env()
