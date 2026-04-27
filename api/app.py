@@ -3,6 +3,8 @@ import logging
 import os
 import tempfile
 import time
+
+import requests
 from pathlib import Path
 
 from flask import Flask, jsonify, request
@@ -109,7 +111,7 @@ def _create_app() -> Flask:
         return jsonify({"analyzed": count(ANALYZED_LOG), "exported": count(EXPORTED_LOG)})
 
     # ---- Jamendo 音乐选曲 ----
-    from jamendo_client import search_popular, JamendoError
+    from jamendo_client import search_popular, get_track_meta, JamendoError
 
     ALLOWED_GENRES = {"ambient", "classical", "electronic", "hiphop", "jazz",
                       "lounge", "pop", "rock", "soundtrack", "world"}
@@ -136,7 +138,56 @@ def _create_app() -> Flask:
             return jsonify(search_popular(client_id=cid, genre=genre, limit=limit))
         except JamendoError as e:
             log.warning("Jamendo popular 失败: %s", e)
-            return jsonify({"error": str(e)}), 503
+            return jsonify({"error": e.safe_message}), 503
+
+    @app.get("/api/jamendo/stream")
+    def jamendo_stream():
+        cid = _client_id_or_503()
+        if not cid:
+            return jsonify({"error": "Jamendo 未配置"}), 503
+        track_id = (request.args.get("track_id") or "").strip()
+        if not track_id:
+            return jsonify({"error": "缺少 track_id"}), 400
+        try:
+            meta = get_track_meta(client_id=cid, track_id=track_id, prefer_download=False)
+        except JamendoError as e:
+            log.warning("Jamendo stream meta 失败: %s", e)
+            msg = e.safe_message
+            status = 404 if "未找到" in msg else 503
+            return jsonify({"error": msg}), status
+
+        from flask import Response, stream_with_context
+        forward_headers = {}
+        if request.headers.get("Range"):
+            forward_headers["Range"] = request.headers["Range"]
+
+        try:
+            upstream = requests.get(
+                meta["url"], headers=forward_headers, stream=True, timeout=30,
+            )
+        except requests.RequestException as e:
+            log.warning("Jamendo CDN 网络错误: %s", e)
+            return jsonify({"error": "Jamendo CDN 暂不可用"}), 503
+
+        # 透传必要的响应头给浏览器（让 <audio> 知道 Range / 总长度）
+        resp_headers = {"Content-Type": "audio/mpeg"}
+        for h in ("Content-Range", "Content-Length", "Accept-Ranges"):
+            if h in upstream.headers:
+                resp_headers[h] = upstream.headers[h]
+
+        def gen():
+            try:
+                for chunk in upstream.iter_content(chunk_size=64 * 1024):
+                    if chunk:
+                        yield chunk
+            finally:
+                upstream.close()
+
+        return Response(
+            stream_with_context(gen()),
+            status=upstream.status_code,
+            headers=resp_headers,
+        )
 
     return app
 

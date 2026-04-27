@@ -15,7 +15,14 @@ DEFAULT_TIMEOUT = 15
 
 
 class JamendoError(Exception):
-    """Jamendo API 调用失败（client_id 无效、上游 5xx、上游错误码等）。"""
+    """Jamendo API 调用失败（client_id 无效、上游 5xx、上游错误码等）。
+
+    safe_message: 适合返回给前端的对外消息（不含上游 URL / client_id 等内部信息）。
+    str(self): 详细消息，仅用于服务端日志。
+    """
+    def __init__(self, message: str, safe_message: str | None = None):
+        super().__init__(message)
+        self.safe_message = safe_message or message
 
 
 def _parse_license(ccurl: str) -> str:
@@ -74,11 +81,15 @@ def search_popular(*, client_id: str, genre: str | None = None, limit: int = 30)
         r = requests.get(f"{BASE}/tracks/", params=params, timeout=DEFAULT_TIMEOUT)
         r.raise_for_status()
     except requests.RequestException as e:
-        raise JamendoError(f"Jamendo 网络错误: {e}") from e
+        raise JamendoError(
+            f"Jamendo 网络错误: {e}",
+            safe_message="Jamendo 服务暂不可用",
+        ) from e
     data = r.json()
     headers = data.get("headers", {})
     if headers.get("status") != "success":
-        raise JamendoError(headers.get("error_message", "Jamendo 上游失败"))
+        msg = headers.get("error_message", "Jamendo 上游失败")
+        raise JamendoError(msg, safe_message=msg)
     tracks = [_map_track(t) for t in data.get("results", [])]
     return {"tracks": tracks, "total": headers.get("results_count", len(tracks))}
 
@@ -108,21 +119,31 @@ def get_track_meta(*, client_id: str, track_id: str, prefer_download: bool = Fal
         r = requests.get(f"{BASE}/tracks/", params=params, timeout=DEFAULT_TIMEOUT)
         r.raise_for_status()
     except requests.RequestException as e:
-        raise JamendoError(f"Jamendo 网络错误: {e}") from e
+        raise JamendoError(
+            f"Jamendo 网络错误: {e}",
+            safe_message="Jamendo 服务暂不可用",
+        ) from e
     data = r.json()
     headers = data.get("headers", {})
     if headers.get("status") != "success":
-        raise JamendoError(headers.get("error_message", "Jamendo 上游失败"))
+        msg = headers.get("error_message", "Jamendo 上游失败")
+        raise JamendoError(msg, safe_message=msg)
     results = data.get("results", [])
     if not results:
-        raise JamendoError(f"track_id 未找到: {track_id}")
+        raise JamendoError(
+            f"track_id 未找到: {track_id}",
+            safe_message="未找到该曲目",
+        )
     raw = results[0]
     if prefer_download:
         url = raw.get("audiodownload") or raw.get("audio")
     else:
         url = raw.get("audio")
     if not url:
-        raise JamendoError(f"track_id={track_id} 无可用 mp3 URL")
+        raise JamendoError(
+            f"track_id={track_id} 无可用 mp3 URL",
+            safe_message="该曲目当前不可用",
+        )
     return {"url": url, "title": raw.get("name", "") or f"track_{track_id}"}
 
 

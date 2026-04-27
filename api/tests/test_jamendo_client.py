@@ -205,3 +205,15 @@ def test_get_track_url_no_audio_url():
     )
     with pytest.raises(JamendoError, match="无可用 mp3 URL"):
         get_track_url(client_id="x", track_id="999")
+
+
+def test_jamendo_error_has_safe_message():
+    err = JamendoError("internal: client_id=abc&host=...", safe_message="服务暂不可用")
+    assert str(err) == "internal: client_id=abc&host=..."
+    assert err.safe_message == "服务暂不可用"
+
+
+def test_jamendo_error_default_safe_message():
+    err = JamendoError("only one msg")
+    assert str(err) == "only one msg"
+    assert err.safe_message == "only one msg"
