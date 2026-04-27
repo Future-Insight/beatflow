@@ -58,7 +58,7 @@ No signup, no install — just open and go.
 ### Project layout
 
 - `frontend/` — static frontend, deploys to GitHub Pages / Cloudflare Pages / Vercel
-- `api/` — Flask beat-analysis service (Docker / Fly.io friendly)
+- `api/` — Flask beat-analysis service (Docker, deployed on Hugging Face Spaces)
 
 ### Run locally
 
@@ -129,7 +129,7 @@ Beatflow 是一款浏览器端的自动节拍卡点视频生成器：上传一�
 ### 项目组成
 
 - `frontend/` — 纯静态前端（可直接部署到 GitHub Pages / Cloudflare Pages / Vercel）
-- `api/` — Flask 节拍分析服务（Docker / Fly.io 友好）
+- `api/` — Flask 节拍分析服务（Docker，部署在 Hugging Face Spaces）
 
 ### 本地运行
 
