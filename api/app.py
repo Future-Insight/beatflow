@@ -219,10 +219,22 @@ def _create_app() -> Flask:
             log.warning("Jamendo CDN 下载失败: %s", e)
             return jsonify({"error": "Jamendo CDN 下载失败"}), 503
 
-        # 文件名安全化（避免 ASCII 之外的字符 + 路径分隔符）
+        # 文件名安全化：HTTP header 是 latin-1，多字节字符会让 gunicorn 抛
+        # UnicodeEncodeError；同时 \r\n 会被 Werkzeug 拒绝。先剔除控制字符，
+        # 再按 RFC 5987 提供 ASCII fallback (filename=) + UTF-8 完整版 (filename*=)。
         import re
-        safe_title = re.sub(r"[^\w\s.-]", "", meta["title"]).strip() or f"track_{track_id}"
-        safe_title = safe_title[:80]  # 限长
+        from urllib.parse import quote
+        title = meta["title"] or ""
+        # 1) 显式删除控制字符（含 \r \n \t 等，\s 字符类不会过滤这些）
+        title = re.sub(r"[\x00-\x1f\x7f]", "", title)
+        # 2) 删除路径分隔符与 header 不安全字符（保留多字节字符给 filename* 用）
+        title = re.sub(r'[\\/:*?"<>|]', "", title).strip()
+        utf8_title = (title or f"track_{track_id}")[:80]
+        # 3) 构造 ASCII fallback：非 ASCII → 下划线，给老浏览器/不支持 filename* 的客户端
+        ascii_title = re.sub(r"[^\x20-\x7e]", "_", utf8_title).strip("_ ") or f"track_{track_id}"
+        ascii_title = ascii_title[:80]
+        # 4) URL-encode UTF-8 完整版给现代浏览器（RFC 5987）
+        utf8_encoded = quote(utf8_title, safe="")
 
         def gen():
             try:
@@ -242,7 +254,10 @@ def _create_app() -> Flask:
             status=200,
             headers={
                 "Content-Type": "audio/mpeg",
-                "Content-Disposition": f'attachment; filename="{safe_title}.mp3"',
+                "Content-Disposition": (
+                    f'attachment; filename="{ascii_title}.mp3"; '
+                    f"filename*=UTF-8''{utf8_encoded}.mp3"
+                ),
             },
         )
 

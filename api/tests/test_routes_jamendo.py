@@ -177,3 +177,67 @@ def test_fetch_falls_back_to_audio_when_no_download(client):
     resp = client.post("/api/jamendo/fetch", json={"track_id": "1"})
     assert resp.status_code == 200
     assert resp.data == b"PREVIEWASFULL"
+
+
+@responses.activate
+def test_fetch_track_not_found_404(client):
+    """track_id 不存在时返回 404（与 stream 路由对称）"""
+    responses.add(
+        responses.GET,
+        "https://api.jamendo.com/v3.0/tracks/",
+        json={"headers": {"status": "success", "results_count": 0}, "results": []},
+        status=200,
+    )
+    resp = client.post("/api/jamendo/fetch", json={"track_id": "999"})
+    assert resp.status_code == 404
+
+
+@responses.activate
+def test_fetch_handles_cjk_title(client):
+    """非 ASCII 标题（如中文）也能成功，Content-Disposition 含 RFC 5987 filename*"""
+    responses.add(
+        responses.GET,
+        "https://api.jamendo.com/v3.0/tracks/",
+        json={"headers": {"status": "success", "results_count": 1},
+              "results": [{"id": "1", "name": "夜的钢琴曲",
+                           "audio": "https://cdn/p.mp3",
+                           "audiodownload": "https://cdn/full.mp3"}]},
+        status=200,
+    )
+    responses.add(
+        responses.GET, "https://cdn/full.mp3",
+        body=b"AUDIODATA", status=200, content_type="audio/mpeg",
+    )
+    resp = client.post("/api/jamendo/fetch", json={"track_id": "1"})
+    assert resp.status_code == 200
+    cd = resp.headers.get("Content-Disposition", "")
+    # ASCII fallback 部分（filename=）应不含中文
+    assert 'filename="' in cd
+    # RFC 5987 部分（filename*=UTF-8''）应含 URL-encoded 中文
+    assert "filename*=UTF-8''" in cd
+    # URL-encoded "夜的钢琴曲" = %E5%A4%9C%E7%9A%84%E9%92%A2%E7%90%B4%E6%9B%B2
+    assert "%E5%A4%9C" in cd  # "夜" 的 URL-encode 前缀
+
+
+@responses.activate
+def test_fetch_strips_control_chars_in_title(client):
+    """标题里的 \\r\\n 等控制字符不会让 Werkzeug 抛 ValueError"""
+    responses.add(
+        responses.GET,
+        "https://api.jamendo.com/v3.0/tracks/",
+        json={"headers": {"status": "success", "results_count": 1},
+              "results": [{"id": "1", "name": "evil\r\nX-Header: pwned",
+                           "audio": "https://cdn/p.mp3",
+                           "audiodownload": "https://cdn/full.mp3"}]},
+        status=200,
+    )
+    responses.add(
+        responses.GET, "https://cdn/full.mp3",
+        body=b"DATA", status=200, content_type="audio/mpeg",
+    )
+    resp = client.post("/api/jamendo/fetch", json={"track_id": "1"})
+    assert resp.status_code == 200
+    cd = resp.headers.get("Content-Disposition", "")
+    assert "X-Header" not in cd or "\r" not in cd
+    # 验证响应头里没有注入的 X-Header
+    assert resp.headers.get("X-Header") is None
