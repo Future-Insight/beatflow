@@ -49,7 +49,10 @@ def _create_app() -> Flask:
 
     @app.get("/api/health")
     def health():
-        return jsonify({"ok": True})
+        return jsonify({
+            "ok": True,
+            "jamendo": bool(os.environ.get("JAMENDO_CLIENT_ID")),
+        })
 
     @app.post("/api/analyze")
     def analyze():
@@ -260,6 +263,11 @@ def _create_app() -> Flask:
                 ),
             },
         )
+
+    if os.environ.get("JAMENDO_CLIENT_ID"):
+        log.info("Jamendo 已启用")
+    else:
+        log.warning("Jamendo 未配置（JAMENDO_CLIENT_ID），相关端点将返回 503")
 
     return app
 

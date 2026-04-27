@@ -241,3 +241,18 @@ def test_fetch_strips_control_chars_in_title(client):
     assert "X-Header" not in cd or "\r" not in cd
     # 验证响应头里没有注入的 X-Header
     assert resp.headers.get("X-Header") is None
+
+
+def test_health_reports_jamendo_configured(client):
+    resp = client.get("/api/health")
+    assert resp.status_code == 200
+    body = resp.get_json()
+    assert body["ok"] is True
+    assert body["jamendo"] is True
+
+
+def test_health_reports_jamendo_not_configured(client, monkeypatch):
+    monkeypatch.delenv("JAMENDO_CLIENT_ID", raising=False)
+    resp = client.get("/api/health")
+    body = resp.get_json()
+    assert body["jamendo"] is False
