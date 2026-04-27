@@ -133,7 +133,7 @@
         onPick && onPick(file);
         onClose && onClose();
       } catch (err) {
-        alert("下载失败：" + (err.message || err));
+        alert(err.message || String(err));
       } finally {
         setSelectingId(null);
       }
@@ -169,10 +169,13 @@
       onClick: onClose,
     }, e("div", {
       className: "jamendo-modal",
+      role: "dialog",
+      "aria-modal": "true",
+      "aria-labelledby": "jamendo-modal-title",
       onClick: (ev) => ev.stopPropagation(),
     },
       e("header", { className: "jamendo-header" },
-        e("span", null, "Jamendo 热门音乐"),
+        e("span", { id: "jamendo-modal-title" }, "Jamendo 热门音乐"),
         e("button", {
           type: "button", "aria-label": "关闭",
           className: "jamendo-close", onClick: onClose,

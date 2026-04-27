@@ -379,6 +379,13 @@ function AudioPanel({ track, setTrack, analyzed, onAnalyze, analyzing, waveform,
   const fileInputRef = useRef(null);
   const [dragOver, setDragOver] = useState(false);
   const dragDepthRef = useRef(0);
+  const [jamendoOpen, setJamendoOpen] = useState(false);
+
+  const onJamendoPick = async (file) => {
+    if (track) onClearAudio && onClearAudio();
+    const next = await window.BeatflowUploads.handleAudioUpload(file);
+    setTrack(next);
+  };
 
   const ingestFile = async (f) => {
     if (!f) return;
@@ -462,6 +469,13 @@ function AudioPanel({ track, setTrack, analyzed, onAnalyze, analyzing, waveform,
             >×</button>
           )}
         </label>
+        <div className="field-actions" style={{marginTop: 8}}>
+          <button
+            type="button"
+            className="jamendo-trigger"
+            onClick={() => setJamendoOpen(true)}
+          >🎵 从 Jamendo 选曲</button>
+        </div>
       </div>
 
       <div className="field" style={{marginTop: -4}}>
@@ -518,6 +532,12 @@ function AudioPanel({ track, setTrack, analyzed, onAnalyze, analyzing, waveform,
           playRange={playRange}
         />
       )}
+
+      {window.BeatflowJamendo && React.createElement(window.BeatflowJamendo.PickerModal, {
+        open: jamendoOpen,
+        onClose: () => setJamendoOpen(false),
+        onPick: onJamendoPick,
+      })}
     </section>
   );
 }
