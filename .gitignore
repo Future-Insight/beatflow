@@ -5,3 +5,9 @@ api/venv/
 # Python
 __pycache__/
 *.pyc
+
+# 本地环境变量（含 Jamendo client_id 等凭证）
+.env
+.env.local
+api/.env
+api/.env.local
