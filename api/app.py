@@ -11,6 +11,27 @@ from flask import Flask, jsonify, request
 
 from lib import analyze_beats
 
+
+def _load_env() -> None:
+    """启动时自动加载同目录 .env（仅当文件存在）。
+
+    生产环境 fly.io 通过 fly secrets 注入环境变量，.env 不会存在，跳过。
+    本地 dev.sh 不 source .env，靠这里把 JAMENDO_CLIENT_ID 等带进来。
+    """
+    env_file = Path(__file__).resolve().parent / ".env"
+    if not env_file.exists():
+        return
+    for line in env_file.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        k, v = line.split("=", 1)
+        os.environ.setdefault(k.strip(), v.strip())
+
+
+_load_env()
+
+
 STATS_DIR = Path(os.environ.get("BEATFLOW_STATS_DIR", "/tmp/beatflow_stats"))
 ANALYZED_LOG = STATS_DIR / "analyzed.jsonl"
 EXPORTED_LOG = STATS_DIR / "exported.jsonl"
