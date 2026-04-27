@@ -110,7 +110,7 @@
   function defaultApiUrl() {
     const host = (typeof location !== "undefined" && location.hostname) || "";
     const isLocal = host === "localhost" || host === "127.0.0.1" || host === "";
-    return isLocal ? "http://localhost:8088" : "https://v-autoflow-api.fly.dev";
+    return isLocal ? "http://localhost:8088" : "https://ryan-luke-v-autoflow-api.hf.space";
   }
 
   function getApiUrl() {
