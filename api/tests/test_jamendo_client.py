@@ -189,3 +189,19 @@ def test_get_track_url_with_title():
     meta = get_track_meta(client_id="x", track_id="999", prefer_download=True)
     assert meta["url"] == "https://cdn/full.mp3"
     assert meta["title"] == "Cool Track"
+
+
+@responses.activate
+def test_get_track_url_no_audio_url():
+    """results 非空但 audio/audiodownload 都缺失 → 抛 JamendoError"""
+    responses.add(
+        responses.GET,
+        "https://api.jamendo.com/v3.0/tracks/",
+        json={
+            "headers": {"status": "success", "results_count": 1},
+            "results": [{"id": "999", "name": "X"}],  # 无 audio / audiodownload
+        },
+        status=200,
+    )
+    with pytest.raises(JamendoError, match="无可用 mp3 URL"):
+        get_track_url(client_id="x", track_id="999")

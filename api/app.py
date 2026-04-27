@@ -108,6 +108,36 @@ def _create_app() -> Flask:
                 return sum(1 for _ in f)
         return jsonify({"analyzed": count(ANALYZED_LOG), "exported": count(EXPORTED_LOG)})
 
+    # ---- Jamendo 音乐选曲 ----
+    from jamendo_client import search_popular, JamendoError
+
+    ALLOWED_GENRES = {"ambient", "classical", "electronic", "hiphop", "jazz",
+                      "lounge", "pop", "rock", "soundtrack", "world"}
+
+    def _client_id_or_503():
+        cid = os.environ.get("JAMENDO_CLIENT_ID")
+        if not cid:
+            return None
+        return cid
+
+    @app.get("/api/jamendo/popular")
+    def jamendo_popular():
+        cid = _client_id_or_503()
+        if not cid:
+            return jsonify({"error": "Jamendo 未配置（缺 JAMENDO_CLIENT_ID）"}), 503
+        genre = (request.args.get("genre") or "").strip() or None
+        if genre and genre not in ALLOWED_GENRES:
+            return jsonify({"error": f"genre 必须为 {sorted(ALLOWED_GENRES)} 之一或留空"}), 400
+        try:
+            limit = int(request.args.get("limit", "30"))
+        except ValueError:
+            return jsonify({"error": "limit 必须是整数"}), 400
+        try:
+            return jsonify(search_popular(client_id=cid, genre=genre, limit=limit))
+        except JamendoError as e:
+            log.warning("Jamendo popular 失败: %s", e)
+            return jsonify({"error": str(e)}), 503
+
     return app
 
 
