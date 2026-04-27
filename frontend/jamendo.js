@@ -56,9 +56,124 @@
     return { blob, filename };
   }
 
+  const GENRES = [
+    null, "ambient", "classical", "electronic", "hiphop", "jazz",
+    "lounge", "pop", "rock", "soundtrack", "world",
+  ];
+
+  function fmtDur(sec) {
+    sec = Math.max(0, Math.floor(sec || 0));
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return `${m}:${String(s).padStart(2, "0")}`;
+  }
+
+  function licenseLabel(lic) {
+    if (!lic || lic === "unknown") return "";
+    return "CC " + lic.toUpperCase();
+  }
+
+  function PickerModal(props) {
+    const { React } = global;
+    const { useState, useEffect, useRef } = React;
+    const { open, onClose, onPick } = props;
+
+    const [genre, setGenre] = useState(null);
+    const [tracks, setTracks] = useState([]);
+    const [loadingList, setLoadingList] = useState(false);
+    const [error, setError] = useState(null);
+    const [playingId, setPlayingId] = useState(null);
+    const [selectingId, setSelectingId] = useState(null);
+    const audioRef = useRef(null);
+
+    // 加载/刷新列表
+    useEffect(() => {
+      if (!open) return;
+      let cancelled = false;
+      setLoadingList(true);
+      setError(null);
+      fetchPopular({ genre, limit: 30 })
+        .then((data) => { if (!cancelled) setTracks(data.tracks || []); })
+        .catch((e) => { if (!cancelled) setError(e.message || String(e)); })
+        .finally(() => { if (!cancelled) setLoadingList(false); });
+      return () => { cancelled = true; };
+    }, [open, genre]);
+
+    // Modal 关闭时停止试听
+    useEffect(() => {
+      if (!open && audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = "";
+        setPlayingId(null);
+      }
+    }, [open]);
+
+    // Esc 关闭
+    useEffect(() => {
+      if (!open) return;
+      const onKey = (e) => { if (e.key === "Escape") onClose && onClose(); };
+      window.addEventListener("keydown", onKey);
+      return () => window.removeEventListener("keydown", onKey);
+    }, [open, onClose]);
+
+    if (!open) return null;
+
+    const e = React.createElement;
+
+    const chipsRow = e("div", { className: "jamendo-chips" },
+      GENRES.map((g) => e("button", {
+        key: g || "all",
+        type: "button",
+        className: "jamendo-chip" + (genre === g ? " active" : ""),
+        disabled: loadingList,
+        onClick: () => setGenre(g),
+      }, g || "全部"))
+    );
+
+    const listBody = error
+      ? e("div", { className: "jamendo-error" }, "加载失败：" + error)
+      : loadingList
+        ? e("div", { className: "jamendo-loading" }, "加载中…")
+        : tracks.length === 0
+          ? e("div", { className: "jamendo-empty" }, "无结果")
+          : e("ul", { className: "jamendo-list" },
+              tracks.map((t) => renderTrackRow(t, {
+                playingId, setPlayingId, selectingId, setSelectingId,
+                audioRef, onClose, onPick,
+              })));
+
+    return e("div", {
+      className: "jamendo-modal-backdrop",
+      onClick: onClose,
+    }, e("div", {
+      className: "jamendo-modal",
+      onClick: (ev) => ev.stopPropagation(),
+    },
+      e("header", { className: "jamendo-header" },
+        e("span", null, "Jamendo 热门音乐"),
+        e("button", {
+          type: "button", "aria-label": "关闭",
+          className: "jamendo-close", onClick: onClose,
+        }, "×")
+      ),
+      chipsRow,
+      e("div", { className: "jamendo-body" }, listBody),
+      e("audio", { ref: audioRef, preload: "none", style: { display: "none" } })
+    ));
+  }
+
+  // renderTrackRow 在 Task 11/12 会被替换为完整实现（含试听按钮 + 选用按钮）
+  function renderTrackRow(t, ctx) {
+    const { React } = global;
+    return React.createElement("li", {
+      key: t.id, className: "jamendo-row",
+    }, `${t.title} — ${t.artist} (${fmtDur(t.duration)})`);
+  }
+
   global.BeatflowJamendo = {
     fetchPopular,
     streamUrl,
     fetchTrackBlob,
+    PickerModal,
   };
 })(window);
