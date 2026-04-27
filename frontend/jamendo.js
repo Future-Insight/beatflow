@@ -130,6 +130,7 @@
       }, g || "全部"))
     );
 
+    const Fragment = global.React.Fragment;
     const listBody = error
       ? e("div", { className: "jamendo-error" }, "加载失败：" + error)
       : loadingList
@@ -137,10 +138,11 @@
         : tracks.length === 0
           ? e("div", { className: "jamendo-empty" }, "无结果")
           : e("ul", { className: "jamendo-list" },
-              tracks.map((t) => renderTrackRow(t, {
+              tracks.map((t) => e(Fragment, { key: t.id }, renderTrackRow(t, {
                 playingId, setPlayingId, selectingId, setSelectingId,
                 audioRef, onClose, onPick,
-              })));
+                onPickClick: null,  // Task 12 接入
+              }))));
 
     return e("div", {
       className: "jamendo-modal-backdrop",
@@ -158,16 +160,63 @@
       ),
       chipsRow,
       e("div", { className: "jamendo-body" }, listBody),
-      e("audio", { ref: audioRef, preload: "none", style: { display: "none" } })
+      e("audio", {
+        ref: audioRef, preload: "none", style: { display: "none" },
+        onEnded: () => setPlayingId(null),
+      })
     ));
   }
 
-  // renderTrackRow 在 Task 11/12 会被替换为完整实现（含试听按钮 + 选用按钮）
   function renderTrackRow(t, ctx) {
     const { React } = global;
-    return React.createElement("li", {
-      key: t.id, className: "jamendo-row",
-    }, `${t.title} — ${t.artist} (${fmtDur(t.duration)})`);
+    const e = React.createElement;
+    const { playingId, setPlayingId, audioRef } = ctx;
+    const isPlaying = playingId === t.id;
+
+    const onTogglePlay = () => {
+      const audio = audioRef.current;
+      if (!audio) return;
+      if (isPlaying) {
+        audio.pause();
+        setPlayingId(null);
+      } else {
+        // 切换到新曲：先停掉当前
+        audio.pause();
+        audio.src = streamUrl(t.id);
+        audio.play().then(() => setPlayingId(t.id)).catch((err) => {
+          console.warn("试听失败", err);
+          setPlayingId(null);
+        });
+      }
+    };
+
+    return e("li", { className: "jamendo-row" + (isPlaying ? " playing" : "") },
+      e("img", {
+        className: "jamendo-cover",
+        src: t.cover_url || "", alt: "",
+        onError: (ev) => { ev.target.style.visibility = "hidden"; },
+      }),
+      e("div", { className: "jamendo-meta" },
+        e("div", { className: "jamendo-title" }, t.title || "(无标题)"),
+        e("div", { className: "jamendo-artist" }, t.artist || ""),
+        licenseLabel(t.license)
+          ? e("div", { className: "jamendo-license" }, licenseLabel(t.license))
+          : null
+      ),
+      e("div", { className: "jamendo-dur" }, fmtDur(t.duration)),
+      e("button", {
+        type: "button",
+        className: "jamendo-play",
+        "aria-label": isPlaying ? "暂停" : "试听",
+        onClick: onTogglePlay,
+      }, isPlaying ? "⏸" : "▶"),
+      e("button", {
+        type: "button",
+        className: "jamendo-pick",
+        onClick: () => ctx.onPickClick && ctx.onPickClick(t),
+        disabled: ctx.selectingId === t.id,
+      }, ctx.selectingId === t.id ? "下载中…" : "选用")
+    );
   }
 
   global.BeatflowJamendo = {
