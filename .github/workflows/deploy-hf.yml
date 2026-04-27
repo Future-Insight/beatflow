@@ -1,0 +1,45 @@
+name: Sync API to Hugging Face Space
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'api/**'
+      - '.github/workflows/deploy-hf.yml'
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    env:
+      HF_USER: ryan-luke
+      HF_SPACE: v-autoflow-api
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Push api/ to Hugging Face Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          set -e
+          git config --global user.email "deploy@github-actions"
+          git config --global user.name "GitHub Actions"
+
+          REMOTE="https://user:${HF_TOKEN}@huggingface.co/spaces/${HF_USER}/${HF_SPACE}"
+
+          git clone --depth 1 "$REMOTE" hf-space
+
+          rsync -av --delete \
+            --exclude='.git' \
+            --exclude='venv' \
+            --exclude='__pycache__' \
+            api/ hf-space/
+
+          cd hf-space
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to push."
+            exit 0
+          fi
+          git commit -m "sync from github main @ ${GITHUB_SHA::7}"
+          git push "$REMOTE" main
