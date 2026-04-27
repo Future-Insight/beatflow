@@ -118,6 +118,27 @@
 
     if (!open) return null;
 
+    const onPickClick = async (t) => {
+      if (selectingId) return;
+      setSelectingId(t.id);
+      try {
+        const { blob, filename } = await fetchTrackBlob(t.id);
+        const file = new File([blob], filename, { type: blob.type || "audio/mpeg" });
+        // 停掉试听
+        if (audioRef.current) {
+          audioRef.current.pause();
+          audioRef.current.src = "";
+        }
+        setPlayingId(null);
+        onPick && onPick(file);
+        onClose && onClose();
+      } catch (err) {
+        alert("下载失败：" + (err.message || err));
+      } finally {
+        setSelectingId(null);
+      }
+    };
+
     const e = React.createElement;
 
     const chipsRow = e("div", { className: "jamendo-chips" },
@@ -140,8 +161,7 @@
           : e("ul", { className: "jamendo-list" },
               tracks.map((t) => e(Fragment, { key: t.id }, renderTrackRow(t, {
                 playingId, setPlayingId, selectingId, setSelectingId,
-                audioRef, onClose, onPick,
-                onPickClick: null,  // Task 12 接入
+                audioRef, onClose, onPick, onPickClick,
               }))));
 
     return e("div", {
@@ -214,7 +234,7 @@
         type: "button",
         className: "jamendo-pick",
         onClick: () => ctx.onPickClick && ctx.onPickClick(t),
-        disabled: ctx.selectingId === t.id,
+        disabled: ctx.selectingId === t.id || !ctx.onPickClick,
       }, ctx.selectingId === t.id ? "下载中…" : "选用")
     );
   }
