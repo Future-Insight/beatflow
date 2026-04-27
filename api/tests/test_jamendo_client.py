@@ -91,3 +91,101 @@ def test_parse_license_known():
     assert _parse_license("http://creativecommons.org/licenses/by/4.0/") == "by"
     assert _parse_license("") == "unknown"
     assert _parse_license("http://example.com/") == "unknown"
+
+
+from jamendo_client import get_track_url
+
+
+@responses.activate
+def test_get_track_url_for_streaming():
+    responses.add(
+        responses.GET,
+        "https://api.jamendo.com/v3.0/tracks/",
+        json={
+            "headers": {"status": "success", "results_count": 1},
+            "results": [{
+                "id": "999", "audio": "https://cdn/preview.mp3",
+                "audiodownload": "https://cdn/full.mp3",
+                "name": "X",
+            }],
+        },
+        status=200,
+    )
+    # 默认（试听场景）：拿 audio
+    assert get_track_url(client_id="x", track_id="999") == "https://cdn/preview.mp3"
+
+
+@responses.activate
+def test_get_track_url_for_download():
+    responses.add(
+        responses.GET,
+        "https://api.jamendo.com/v3.0/tracks/",
+        json={
+            "headers": {"status": "success", "results_count": 1},
+            "results": [{
+                "id": "999", "audio": "https://cdn/preview.mp3",
+                "audiodownload": "https://cdn/full.mp3",
+                "name": "X",
+            }],
+        },
+        status=200,
+    )
+    # prefer_download=True：拿 audiodownload
+    assert get_track_url(client_id="x", track_id="999", prefer_download=True) \
+        == "https://cdn/full.mp3"
+
+
+@responses.activate
+def test_get_track_url_download_falls_back_to_audio():
+    responses.add(
+        responses.GET,
+        "https://api.jamendo.com/v3.0/tracks/",
+        json={
+            "headers": {"status": "success", "results_count": 1},
+            "results": [{
+                "id": "999", "audio": "https://cdn/preview.mp3",
+                # 无 audiodownload
+                "name": "X",
+            }],
+        },
+        status=200,
+    )
+    assert get_track_url(client_id="x", track_id="999", prefer_download=True) \
+        == "https://cdn/preview.mp3"
+
+
+@responses.activate
+def test_get_track_url_not_found():
+    responses.add(
+        responses.GET,
+        "https://api.jamendo.com/v3.0/tracks/",
+        json={
+            "headers": {"status": "success", "results_count": 0},
+            "results": [],
+        },
+        status=200,
+    )
+    with pytest.raises(JamendoError, match="未找到"):
+        get_track_url(client_id="x", track_id="missing")
+
+
+@responses.activate
+def test_get_track_url_with_title():
+    """get_track_meta 同时返回 url 与 title（用于 fetch 的 Content-Disposition）"""
+    from jamendo_client import get_track_meta
+    responses.add(
+        responses.GET,
+        "https://api.jamendo.com/v3.0/tracks/",
+        json={
+            "headers": {"status": "success", "results_count": 1},
+            "results": [{
+                "id": "999", "audio": "https://cdn/preview.mp3",
+                "audiodownload": "https://cdn/full.mp3",
+                "name": "Cool Track",
+            }],
+        },
+        status=200,
+    )
+    meta = get_track_meta(client_id="x", track_id="999", prefer_download=True)
+    assert meta["url"] == "https://cdn/full.mp3"
+    assert meta["title"] == "Cool Track"

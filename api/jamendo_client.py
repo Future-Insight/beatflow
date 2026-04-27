@@ -81,3 +81,52 @@ def search_popular(*, client_id: str, genre: str | None = None, limit: int = 30)
         raise JamendoError(headers.get("error_message", "Jamendo 上游失败"))
     tracks = [_map_track(t) for t in data.get("results", [])]
     return {"tracks": tracks, "total": headers.get("results_count", len(tracks))}
+
+
+def get_track_meta(*, client_id: str, track_id: str, prefer_download: bool = False) -> dict:
+    """根据 track_id 查询并返回 {url, title}。
+
+    Args:
+        client_id: Jamendo client_id
+        track_id: 曲目 id
+        prefer_download: True 时优先用 audiodownload（fetch 场景），
+                         False 时用 audio（stream/试听场景）
+
+    Returns:
+        {"url": "<mp3 url>", "title": "<track name>"}
+
+    Raises:
+        JamendoError: 上游错误或 track_id 未找到
+    """
+    params = {
+        "client_id": client_id,
+        "format": "json",
+        "id": track_id,
+        "audioformat": "mp32",
+    }
+    try:
+        r = requests.get(f"{BASE}/tracks/", params=params, timeout=DEFAULT_TIMEOUT)
+        r.raise_for_status()
+    except requests.RequestException as e:
+        raise JamendoError(f"Jamendo 网络错误: {e}") from e
+    data = r.json()
+    headers = data.get("headers", {})
+    if headers.get("status") != "success":
+        raise JamendoError(headers.get("error_message", "Jamendo 上游失败"))
+    results = data.get("results", [])
+    if not results:
+        raise JamendoError(f"track_id 未找到: {track_id}")
+    raw = results[0]
+    if prefer_download:
+        url = raw.get("audiodownload") or raw.get("audio")
+    else:
+        url = raw.get("audio")
+    if not url:
+        raise JamendoError(f"track_id={track_id} 无可用 mp3 URL")
+    return {"url": url, "title": raw.get("name", "") or f"track_{track_id}"}
+
+
+def get_track_url(*, client_id: str, track_id: str, prefer_download: bool = False) -> str:
+    """get_track_meta 的便捷包装，只返回 URL。"""
+    return get_track_meta(client_id=client_id, track_id=track_id,
+                          prefer_download=prefer_download)["url"]
