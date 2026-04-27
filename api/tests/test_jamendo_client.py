@@ -217,3 +217,13 @@ def test_jamendo_error_default_safe_message():
     err = JamendoError("only one msg")
     assert str(err) == "only one msg"
     assert err.safe_message == "only one msg"
+
+
+def test_jamendo_error_code_default_none():
+    err = JamendoError("X")
+    assert err.code is None
+
+
+def test_jamendo_error_code_explicit():
+    err = JamendoError("X", code="not_found")
+    assert err.code == "not_found"

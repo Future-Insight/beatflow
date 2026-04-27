@@ -152,18 +152,19 @@ def _create_app() -> Flask:
             meta = get_track_meta(client_id=cid, track_id=track_id, prefer_download=False)
         except JamendoError as e:
             log.warning("Jamendo stream meta 失败: %s", e)
-            msg = e.safe_message
-            status = 404 if "未找到" in msg else 503
-            return jsonify({"error": msg}), status
+            status = 404 if e.code == "not_found" else 503
+            return jsonify({"error": e.safe_message}), status
 
         from flask import Response, stream_with_context
         forward_headers = {}
-        if request.headers.get("Range"):
-            forward_headers["Range"] = request.headers["Range"]
+        for h in ("Range", "If-Range"):
+            if request.headers.get(h):
+                forward_headers[h] = request.headers[h]
 
         try:
             upstream = requests.get(
-                meta["url"], headers=forward_headers, stream=True, timeout=30,
+                meta["url"], headers=forward_headers, stream=True,
+                timeout=(10, 60),  # (connect, read)：连接 10s；read 单 chunk 60s
             )
         except requests.RequestException as e:
             log.warning("Jamendo CDN 网络错误: %s", e)
@@ -180,6 +181,11 @@ def _create_app() -> Flask:
                 for chunk in upstream.iter_content(chunk_size=64 * 1024):
                     if chunk:
                         yield chunk
+            except requests.RequestException as e:
+                log.warning("Jamendo stream 中断: %s", e)
+            except GeneratorExit:
+                log.info("Jamendo stream 客户端断开")
+                raise
             finally:
                 upstream.close()
 
@@ -187,6 +193,57 @@ def _create_app() -> Flask:
             stream_with_context(gen()),
             status=upstream.status_code,
             headers=resp_headers,
+        )
+
+    @app.post("/api/jamendo/fetch")
+    def jamendo_fetch():
+        cid = _client_id_or_503()
+        if not cid:
+            return jsonify({"error": "Jamendo 未配置"}), 503
+        payload = request.get_json(silent=True) or {}
+        track_id = (payload.get("track_id") or "").strip()
+        if not track_id:
+            return jsonify({"error": "缺少 track_id"}), 400
+        try:
+            meta = get_track_meta(client_id=cid, track_id=track_id, prefer_download=True)
+        except JamendoError as e:
+            log.warning("Jamendo fetch meta 失败: %s", e)
+            status = 404 if e.code == "not_found" else 503
+            return jsonify({"error": e.safe_message}), status
+
+        from flask import Response, stream_with_context
+        try:
+            upstream = requests.get(meta["url"], stream=True, timeout=(10, 60))
+            upstream.raise_for_status()
+        except requests.RequestException as e:
+            log.warning("Jamendo CDN 下载失败: %s", e)
+            return jsonify({"error": "Jamendo CDN 下载失败"}), 503
+
+        # 文件名安全化（避免 ASCII 之外的字符 + 路径分隔符）
+        import re
+        safe_title = re.sub(r"[^\w\s.-]", "", meta["title"]).strip() or f"track_{track_id}"
+        safe_title = safe_title[:80]  # 限长
+
+        def gen():
+            try:
+                for chunk in upstream.iter_content(chunk_size=64 * 1024):
+                    if chunk:
+                        yield chunk
+            except requests.RequestException as e:
+                log.warning("Jamendo fetch 中断: %s", e)
+            except GeneratorExit:
+                log.info("Jamendo fetch 客户端断开")
+                raise
+            finally:
+                upstream.close()
+
+        return Response(
+            stream_with_context(gen()),
+            status=200,
+            headers={
+                "Content-Type": "audio/mpeg",
+                "Content-Disposition": f'attachment; filename="{safe_title}.mp3"',
+            },
         )
 
     return app

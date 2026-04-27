@@ -131,3 +131,49 @@ def test_stream_track_not_found_404(client):
     )
     resp = client.get("/api/jamendo/stream?track_id=999")
     assert resp.status_code == 404
+
+
+@responses.activate
+def test_fetch_returns_full_mp3(client):
+    responses.add(
+        responses.GET,
+        "https://api.jamendo.com/v3.0/tracks/",
+        json={"headers": {"status": "success", "results_count": 1},
+              "results": [{"id": "1", "name": "Cool Track",
+                           "audio": "https://cdn/p.mp3",
+                           "audiodownload": "https://cdn/full.mp3"}]},
+        status=200,
+    )
+    responses.add(
+        responses.GET, "https://cdn/full.mp3",
+        body=b"FULLAUDIODATA", status=200, content_type="audio/mpeg",
+    )
+    resp = client.post("/api/jamendo/fetch", json={"track_id": "1"})
+    assert resp.status_code == 200
+    assert resp.mimetype == "audio/mpeg"
+    assert resp.data == b"FULLAUDIODATA"
+    assert "Cool Track" in resp.headers.get("Content-Disposition", "")
+
+
+def test_fetch_missing_track_id_400(client):
+    resp = client.post("/api/jamendo/fetch", json={})
+    assert resp.status_code == 400
+
+
+@responses.activate
+def test_fetch_falls_back_to_audio_when_no_download(client):
+    responses.add(
+        responses.GET,
+        "https://api.jamendo.com/v3.0/tracks/",
+        json={"headers": {"status": "success", "results_count": 1},
+              "results": [{"id": "1", "name": "X",
+                           "audio": "https://cdn/p.mp3"}]},  # 无 audiodownload
+        status=200,
+    )
+    responses.add(
+        responses.GET, "https://cdn/p.mp3",
+        body=b"PREVIEWASFULL", status=200, content_type="audio/mpeg",
+    )
+    resp = client.post("/api/jamendo/fetch", json={"track_id": "1"})
+    assert resp.status_code == 200
+    assert resp.data == b"PREVIEWASFULL"

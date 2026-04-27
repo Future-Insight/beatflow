@@ -17,12 +17,17 @@ DEFAULT_TIMEOUT = 15
 class JamendoError(Exception):
     """Jamendo API 调用失败（client_id 无效、上游 5xx、上游错误码等）。
 
-    safe_message: 适合返回给前端的对外消息（不含上游 URL / client_id 等内部信息）。
+    Attributes:
+        safe_message: 适合返回给前端的对外消息（不含上游 URL / client_id 等内部信息）。
+        code: 错误分类，路由层据此决定 HTTP 状态码
+              - "not_found": track_id 不存在 → 404
+              - 其他: 503
     str(self): 详细消息，仅用于服务端日志。
     """
-    def __init__(self, message: str, safe_message: str | None = None):
+    def __init__(self, message: str, safe_message: str | None = None, code: str | None = None):
         super().__init__(message)
         self.safe_message = safe_message or message
+        self.code = code
 
 
 def _parse_license(ccurl: str) -> str:
@@ -133,6 +138,7 @@ def get_track_meta(*, client_id: str, track_id: str, prefer_download: bool = Fal
         raise JamendoError(
             f"track_id 未找到: {track_id}",
             safe_message="未找到该曲目",
+            code="not_found",
         )
     raw = results[0]
     if prefer_download:
